@@ -1,0 +1,12 @@
+# C++ Builder ignore files
+*.~*
+*.obj
+*.tds
+*.cgl
+
+# directories
+bk/
+bk_2/
+imo2bk/
+libtiff/
+otherutm/
