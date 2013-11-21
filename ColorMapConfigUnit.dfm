@@ -1,6 +1,6 @@
 object ColorMapConfigForm: TColorMapConfigForm
-  Left = 927
-  Top = 301
+  Left = 955
+  Top = 231
   BorderStyle = bsDialog
   Caption = #12524#12505#12523#12473#12521#12452#12473
   ClientHeight = 615

@@ -275,6 +275,7 @@ int remos_read_file( struct REMOS_FILE_CONTAINER *cont )
 			}
 
             cont->bands->byte_per_sample = cont->bands->bits / 8;
+            cont->bands->sample_per_pix  = 1;				/* とりあえず1 */
 
 			cont->bands->line_img_width = ( cont->bands->line_width - cont->bands->line_header - cont->bands->line_footer ) / cont->bands->byte_per_sample;
 			
@@ -315,6 +316,7 @@ int remos_read_file( struct REMOS_FILE_CONTAINER *cont )
 				cont->bands[i].fp   = cont->fp;
 				cont->bands[i].bits = 8;									/* 今のところ8しか考えてない */
 				cont->bands[i].byte_per_sample = cont->bands[i].bits / 8;
+				cont->bands[i].sample_per_pix  = 1;							/* とりあえず1 */
 
 				cont->bands[i].color = REMOS_BAND_COLOR_BW;
 				cont->bands[i].sample_format = REMOS_BAND_SAMPLE_FORMAT_UINT;
@@ -457,6 +459,9 @@ int remos_read_file( struct REMOS_FILE_CONTAINER *cont )
 			for ( i = 0; i < cont->band_count; i++ ) {
 				cont->bands[i].bits = bits;
 				cont->bands[i].byte_per_sample = cont->bands[i].bits / 8;
+				
+				/* カラーの場合でも展開しているのでピクセルあたりのサンプル数は1で固定 */
+				cont->bands[i].sample_per_pix  = 1;
 
 				/* このバンドが取りうる値の範囲を確定 */
 				if ( sample_format == REMOS_BAND_SAMPLE_FORMAT_UINT ) {
@@ -694,19 +699,15 @@ int remos_make_hist( struct REMOS_BAND *band )
 	/* ヒストグラム生成 */
 	int i, j;
 	int lines;
+	int pos;
+	float val;
 	unsigned int max;
-	unsigned int pos;
 	unsigned char *buf;
 
 	max = 0;
 
 	/* ライン数 */
 	lines = band->line_count;
-
-	/* 8bitモードか？ */
-	if ( band->bits != 8 ) {
-		return REMOS_RET_FAILED;
-	}
 	
 	/* メモリクリア */
 	for ( i = 0; i < 256; i++ ) {
@@ -714,14 +715,22 @@ int remos_make_hist( struct REMOS_BAND *band )
 	}
 	
 	/* バッファ確保 */
-	buf = malloc( band->line_img_width );
+	buf = malloc( band->line_img_width * band->byte_per_sample * band->sample_per_pix );
 	
 	/* 計測 */
 	for ( i = 0; i < lines; i++ ) {
+		/* 1ライン取得 */
 		remos_get_line_pixels( band, buf, i, 0, band->line_img_width );
 		
 		for ( j = 0; j < band->line_img_width; j++ ) {
-			band->hist[buf[j]]++;
+			/* 値に変換 */
+			val = remos_data_to_value_band( band, buf + band->bits / 8 * j );
+			
+			/* ヒストグラム上での位置を確定 */
+			pos = ( val - band->range_min ) / ( band->range_max - band->range_min ) * 255;
+			
+			/* ヒストグラム追加 */
+			band->hist[pos]++;
 		}
 	}
 	

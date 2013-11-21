@@ -82,9 +82,9 @@ struct REMOS_BAND {											/* バンド情報構造体 */
 	int line_footer;										/* ラインフッター */
 	int line_img_width;										/* ライン内の画像幅 */
 
-	unsigned int hist[256];									/* ヒストグラム ( 8bit専用 ) */
-	int hist_max;											/* ヒストグラム最大値 */
-	int hist_max_reduce_topbottom;							/* 0と255を除いたヒストグラム最大値 */
+	unsigned int hist[256];									/* ヒストグラム */
+	int hist_max;											/* ヒストグラム最大値 ( ヒストグラム内位置0-255 ) */
+	int hist_max_reduce_topbottom;							/* 0と255を除いたヒストグラム最大値 ( ヒストグラム内位置0-255 ) */
 
 	float range_top;										/* レンジ上 */
 	float range_bottom;										/* レンジ下 */

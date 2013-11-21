@@ -383,7 +383,7 @@ struct REMOS_FRONT_BAND *TSatViewMainForm::MakeBandBox( struct REMOS_BAND *band,
     box->img_canvas = NULL;
 
     /* ラインバッファ作成 */
-    box->line_buf = (unsigned char *)malloc( box->band->line_img_width * box->band->byte_per_sample );
+    box->line_buf = (unsigned char *)malloc( box->band->line_img_width * box->band->byte_per_sample * box->band->sample_per_pix );	// DEBUG バグを招く可能性が高い
 
     return box;
 }
