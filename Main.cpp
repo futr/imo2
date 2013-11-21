@@ -1572,6 +1572,7 @@ void TSatViewMainForm::DrawHist( struct REMOS_FRONT_BAND *box )
     h = box->img_hist->Height;
 
     // 8bit‚Å‚È‚¯‚ê‚Î‹­§’â~
+    /*
     if ( box->band->bits != 8 ) {
     	box->img_hist->Canvas->Brush->Color = clWhite;
         box->img_hist->Canvas->Font->Color = clRed;
@@ -1579,6 +1580,7 @@ void TSatViewMainForm::DrawHist( struct REMOS_FRONT_BAND *box )
 
     	return;
     }
+    */
 
     /* 0œZ–h~ */
     if ( box->band->hist_max == 0 ) {
@@ -3770,7 +3772,7 @@ void __fastcall TSatViewMainForm::OpenFiles( void )
                         /* ƒoƒ“ƒhƒ{ƒbƒNƒX‚Ì¶¬‚Æ“o˜^ */
 
                         /* “o˜^AƒqƒXƒgƒOƒ‰ƒ€‚àì¬ */
-                        if ( b_hist_calc && remos->bands[j].bits == 8 ) {
+                        if ( b_hist_calc ) {
                             remos_make_hist( &remos->bands[j] );
                         } else {
                             /* 0œZ–h~‚È‚Ç‚Ì‚½‚ß“K“–‚È‰Šú’l‚ğ‘ã“ü */
@@ -3789,7 +3791,7 @@ void __fastcall TSatViewMainForm::OpenFiles( void )
                         box = (struct REMOS_FRONT_BAND *)list_band->Items[list_band->Count - 1];
 
                         /* ƒqƒXƒgƒOƒ‰ƒ€ì¬ƒtƒ‰ƒO */
-                        if ( b_hist_calc && remos->bands[j].bits == 8 ) {
+                        if ( b_hist_calc ) {
                             box->hist_maked = true;
                         } else {
                             box->hist_maked = false;
