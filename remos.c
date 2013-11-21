@@ -196,6 +196,7 @@ int remos_read_file( struct REMOS_FILE_CONTAINER *cont )
 				cont->bands[i].range_top    = pow( 2, cont->bands->bits ) - 1;
 				cont->bands[i].range_bottom = 0;
 				cont->bands[i].range_max    = pow( 2, cont->bands->bits ) - 1;
+				cont->bands[i].range_min    = 0;
 			}
 
 			/* コンテナに画像サイズを設定 */
@@ -282,6 +283,7 @@ int remos_read_file( struct REMOS_FILE_CONTAINER *cont )
 			cont->bands->range_top    = pow( 2, cont->bands->bits ) - 1;
 			cont->bands->range_bottom = 0;
 			cont->bands->range_max    = pow( 2, cont->bands->bits ) - 1;
+			cont->bands->range_min    = 0;
 
 			/* コンテナに画像サイズを設定 */
 			cont->img_height = cont->bands->line_count;
@@ -332,6 +334,7 @@ int remos_read_file( struct REMOS_FILE_CONTAINER *cont )
 				cont->bands[i].range_top    = pow( 2, cont->bands[i].bits ) - 1;
 				cont->bands[i].range_bottom = 0;
 				cont->bands[i].range_max    = pow( 2, cont->bands[i].bits ) - 1;
+				cont->bands[i].range_min    = 0;
 			}
 			
 			/* バッファを解放 */
@@ -455,9 +458,11 @@ int remos_read_file( struct REMOS_FILE_CONTAINER *cont )
 				cont->bands[i].bits = bits;
 				cont->bands[i].byte_per_sample = cont->bands[i].bits / 8;
 
+				/* このバンドが取りうる値の範囲を確定 */
 				cont->bands[i].range_bottom = 0;
 				cont->bands[i].range_max    = pow( 2, cont->bands[i].bits ) - 1;
 				cont->bands[i].range_top    = pow( 2, cont->bands[i].bits ) - 1;
+				cont->bands[i].range_min    = 0;
 
 				cont->bands[i].band_count   = cont->band_count;
 				cont->bands[i].band_num     = i;
@@ -540,6 +545,7 @@ int remos_set_type_BIL( struct REMOS_FILE_CONTAINER *cont,
 		cont->bands[i].range_max    = pow( 2, bits ) - 1;
 		cont->bands[i].range_top    = pow( 2, bits ) - 1;
 		cont->bands[i].range_bottom = 0;
+		cont->bands[i].range_min    = 0;
 	}
 	
 	return REMOS_RET_SUCCEED;
