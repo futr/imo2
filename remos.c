@@ -459,10 +459,31 @@ int remos_read_file( struct REMOS_FILE_CONTAINER *cont )
 				cont->bands[i].byte_per_sample = cont->bands[i].bits / 8;
 
 				/* このバンドが取りうる値の範囲を確定 */
-				cont->bands[i].range_bottom = 0;
-				cont->bands[i].range_max    = pow( 2, cont->bands[i].bits ) - 1;
-				cont->bands[i].range_top    = pow( 2, cont->bands[i].bits ) - 1;
-				cont->bands[i].range_min    = 0;
+				if ( sample_format == REMOS_BAND_SAMPLE_FORMAT_UINT ) {
+					/* 符号なし整数 */
+					cont->bands[i].range_max    = pow( 2, cont->bands[i].bits ) - 1;
+					cont->bands[i].range_top    = pow( 2, cont->bands[i].bits ) - 1;
+					cont->bands[i].range_min    = 0;
+					cont->bands[i].range_bottom = 0;
+				} else if ( sample_format == REMOS_BAND_SAMPLE_FORMAT_INT ) {
+					/* 符号付き整数 */
+					cont->bands[i].range_max    = pow( 2, cont->bands[i].bits - 1 ) - 1;
+					cont->bands[i].range_top    = pow( 2, cont->bands[i].bits - 1 ) - 1;
+					cont->bands[i].range_min    = -pow( 2, cont->bands[i].bits - 1 );
+					cont->bands[i].range_bottom = -pow( 2, cont->bands[i].bits - 1 );
+				} else if ( sample_format == REMOS_BAND_SAMPLE_FORMAT_IEEEFP ) {
+					/* IEEE浮動小数点 ( ほとんど無意味 ) */
+					cont->bands[i].range_max    = FLT_MAX;
+					cont->bands[i].range_top    = FLT_MAX;
+					cont->bands[i].range_min    = -FLT_MAX;
+					cont->bands[i].range_bottom = -FLT_MAX;
+				} else {
+					/* 不明 ( 符号なしと同じ ) */
+					cont->bands[i].range_max    = pow( 2, cont->bands[i].bits ) - 1;
+					cont->bands[i].range_top    = pow( 2, cont->bands[i].bits ) - 1;
+					cont->bands[i].range_min    = 0;
+					cont->bands[i].range_bottom = 0;
+				}
 
 				cont->bands[i].band_count   = cont->band_count;
 				cont->bands[i].band_num     = i;
