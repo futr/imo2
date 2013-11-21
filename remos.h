@@ -176,7 +176,7 @@ float remos_get_pixel( struct REMOS_BAND *band, int pos );													/* 指定バ
 int remos_get_line_pixels( struct REMOS_BAND *band, unsigned char *buf, int line, int from, int count );	/* 指定バンドの指定位置からcountピクセルをつめこむ  */
 void remos_get_pixels( struct REMOS_FILE_CONTAINER *cont, int pos, struct REMOS_PIXELS *pixs );				/* ファイルコンテナ内の全バンドの指定一のデータを一括でもらう */
 void remos_get_ranged_pixels( struct REMOS_BAND *band, unsigned char *buf, int count );						/* 指定バンドのダイナミックレンジに応じてレンジングする */
-int remos_get_ranged_pixel( struct REMOS_BAND *band, int val );												/* 指定バンドのレンジに応じて1バイト処理 */
+float remos_get_ranged_pixel( struct REMOS_BAND *band, float val );											/* 指定バンドのレンジに応じて1バイト処理 */
 
 void remos_make_pixels( struct REMOS_FILE_CONTAINER *cont, struct REMOS_PIXELS *pixs );						/* PIXELS内の配列を自動確保 */
 void remos_free_pixels( struct REMOS_PIXELS *pixs );														/* 確保されたPIXELSを自動解放 */

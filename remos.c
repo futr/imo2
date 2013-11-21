@@ -1221,39 +1221,29 @@ void remos_get_ranged_pixels( struct REMOS_BAND *band, unsigned char *buf, int c
 	}
 }
 
-int remos_get_ranged_pixel( struct REMOS_BAND *band, int val )
+float remos_get_ranged_pixel( struct REMOS_BAND *band, float val )
 {
 	/* 指定バンドのダイナミックレンジに応じて値を丸める */
 	int i;
 	int ret;
 
-    /* DEBUG : 8bit以外は何もしない */
-    if ( band->bits != 8 ) {
-    	return val;
-    }
-    
-   	/* unsigned int でしか使えない */
-	if ( band->sample_format != REMOS_BAND_SAMPLE_FORMAT_UINT ) {
-		return val;
-	}
-
 	/* 指定されてなければ計算しない */
-	if ( band->range_bottom == 0 && band->range_top == 255 ) {
+	if ( band->range_bottom == band->range_min && band->range_top == band->range_max ) {
 		return val;
 	}
 
     /* 幅が0ならなにもしない */
-    if ( ( band->range_top - band->range_bottom ) < 1 ) {
+    if ( ( band->range_top - band->range_bottom ) == 0 ) {
     	return val;
     }
 
 	/* 計算 */
-	ret = ( val - band->range_bottom ) * ( 255.999999 / ( band->range_top - band->range_bottom ) );
+	ret = ( val - band->range_bottom ) / ( band->range_top - band->range_bottom ) * ( band->range_max - band->range_min ) + band->range_min;
 
-	if ( ret < 0 ) {
-		ret = 0;
-	} else if ( ret > 255 ) {
-		ret = 255;
+	if ( ret < band->range_min ) {
+		ret = band->range_min;
+	} else if ( ret > band->range_max ) {
+		ret = band->range_max;
 	}
 
 	return ret;
