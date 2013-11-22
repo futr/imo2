@@ -224,9 +224,6 @@ bool __fastcall TSaveForm::SaveToBmp( AnsiString filename, int zpos )
                 } else {
                 	mf->GetLineData( band, band->line_buf, 0 + i, 0, img_read_xc );
                 }
-
-                /* レンジ適用 */
-                remos_get_ranged_pixels( band->band, band->line_buf, img_read_xc );
             }
 
             /* 画面に書き込み */
@@ -239,16 +236,11 @@ bool __fastcall TSaveForm::SaveToBmp( AnsiString filename, int zpos )
                     band = (struct REMOS_FRONT_BAND *)(mf->list_band->Items[l]);
 
                     /* 値登録 */
-                    // var[l] = band->line_buf[k];
                     if ( band->canvas_mode ) {
                         // キャンバスモード
-                    	var[l] = band->line_buf[k];
+                    	var[l] = remos_get_ranged_pixel( band->band, band->line_buf[k] );
                     } else {
-                    	// remosモード DEBUG : エンディアンを決め打ちにしているのでバグるかも
-                        // var[l] = remos_data_to_value( band->line_buf + band->band->bits / 8 * k, band->band->bits / 8, REMOS_ENDIAN_LITTLE );
-
-                    	// DEBUG : 値の取得方法を変更 ( マイナスに対応させるため )
-                        var[l] = remos_data_to_value_band( band->band, band->line_buf + band->band->bits / 8 * k );
+                        var[l] = remos_get_ranged_pixel( band->band, remos_data_to_value_band( band->band, band->line_buf + band->band->bits / 8 * k ) );
                     }
                 }
 
@@ -344,16 +336,11 @@ bool __fastcall TSaveForm::SaveToBmp( AnsiString filename, int zpos )
                 	/* バンド取得 */
                     band = (struct REMOS_FRONT_BAND *)(mf->list_band->Items[l]);
 
-                    /* 値登録 ( レンジの処理はここで行う ) */
-                    // var[l] = remos_get_ranged_pixel( band->band, band->line_buf[k * skip] );
                     /* 値登録 */
                     if ( band->canvas_mode ) {
                         // キャンバスモード
                     	var[l] = remos_get_ranged_pixel( band->band, band->line_buf[k * skip] );
                     } else {
-                    	// remosモード DEBUG : エンディアンを決め打ちにしているのでバグるかも
-                        // var[l] = remos_get_ranged_pixel( band->band, remos_data_to_value( band->line_buf + band->band->bits / 8 * k * skip, band->band->bits / 8, REMOS_ENDIAN_LITTLE ) );
-                    	// DEBUG : 値の取得方法を変更 ( マイナスに対応させるため )
                         var[l] = remos_get_ranged_pixel( band->band, remos_data_to_value_band( band->band, band->line_buf + band->band->bits / 8 * k * skip ) );
                     }
                 }

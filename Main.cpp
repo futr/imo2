@@ -610,7 +610,6 @@ void __fastcall TSatViewMainForm::DrawImg( TImage *screen, Graphics::TBitmap *ba
                     band = (struct REMOS_FRONT_BAND *)(list_band->Items[l]);
 
                     /* 値登録 */
-                    // var[l] = band->line_buf[k];
                     if ( band->canvas_mode ) {
                         // キャンバスモード
                     	var[l] = remos_get_ranged_pixel( band->band, band->line_buf[k] );
@@ -688,9 +687,6 @@ void __fastcall TSatViewMainForm::DrawImg( TImage *screen, Graphics::TBitmap *ba
                 } else {
                 	GetLineData( band, band->line_buf, img_start_y + i * skip, img_start_x, img_read_xc * skip );
                 }
-
-                /* レンジ適用 */
-                // remos_get_ranged_pixels( band->band, band->line_buf, img_read_xc * skip );
             }
 
             /* 画面に書き込み */
@@ -705,6 +701,7 @@ void __fastcall TSatViewMainForm::DrawImg( TImage *screen, Graphics::TBitmap *ba
                 	/* バンド取得 */
                     band = (struct REMOS_FRONT_BAND *)(list_band->Items[l]);
 
+                    /* 値登録 */
                     if ( band->canvas_mode ) {
                         // キャンバスモード
                     	var[l] = remos_get_ranged_pixel( band->band, band->line_buf[k * skip] );
