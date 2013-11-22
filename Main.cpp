@@ -1480,8 +1480,8 @@ void TSatViewMainForm::UpdateBandBox( struct REMOS_FRONT_BAND *box )
     box->label_name->Hint = box->label_name->Caption;
 
     /* レンジ読み込み */
-    box->updown_bottom->Position = box->band->range_bottom;
-    box->updown_top->Position    = box->band->range_top;
+    box->edit_bottom->Text = FloatToStr( box->band->range_bottom );
+    box->edit_top->Text    = FloatToStr( box->band->range_top );
 
     /* ヒストグラム描画 */
     DrawHist( box );
@@ -1658,17 +1658,24 @@ void __fastcall TSatViewMainForm::BandEditUpChange(TObject *Sender)
 {
 	/* ヒストグラム変更 */
     struct REMOS_FRONT_BAND *box;
+    float val;
 
     /* BNAD特定 */
     box = (struct REMOS_FRONT_BAND *)( ( (TBitBtn *)Sender )->Parent->Tag );
 
-    /* オーバーしてないか */
-    if ( box->updown_bottom->Position >= box->updown_top->Position ) {
-    	box->updown_top->Position = box->updown_bottom->Position + 1;
+    /* 現在の値 */
+    val = box->edit_top->Text.ToDouble();
+
+    /* オーバーしていれば最小と等しくする */
+    if ( box->band->range_bottom > val ) {
+    	val = box->band->range_bottom;
     }
 
-    box->band->range_top = box->updown_top->Position;
+    /* 値更新 */
+    box->band->range_top = val;
+    box->edit_top->Text  = FloatToStr( val );
 
+    /* 画面更新 */
     DrawHist( box );
 
 	PleaseClick();
@@ -1691,21 +1698,28 @@ void __fastcall TSatViewMainForm::BandEditDownChange(TObject *Sender)
 {
 	/* ヒストグラム変更 */
     struct REMOS_FRONT_BAND *box;
-
+    float val;
 
     /* BNAD特定 */
     box = (struct REMOS_FRONT_BAND *)( ( (TBitBtn *)Sender )->Parent->Tag );
 
-    /* オーバーしてないか */
-    if ( box->updown_bottom->Position >= box->updown_top->Position ) {
-    	box->updown_bottom->Position = box->updown_top->Position - 1;
+    /* 現在の値 */
+    val = box->edit_bottom->Text.ToDouble();
+
+    /* オーバーしていれば最大と等しくする */
+    if ( box->band->range_top < val ) {
+    	val = box->band->range_top;
     }
 
-    box->band->range_bottom = box->updown_bottom->Position;
+    /* 値更新 */
+    box->band->range_bottom = val;
+    box->edit_bottom->Text  = FloatToStr( val );
 
+    /* 画面更新 */
     DrawHist( box );
 
-    PleaseClick();}
+	PleaseClick();
+}
 //---------------------------------------------------------------------------
 AnsiString TSatViewMainForm::GetLon( int x, int y )
 {
@@ -3691,8 +3705,6 @@ void __fastcall TSatViewMainForm::OpenFiles( void )
                 remos->bands[j].hist_max_reduce_topbottom = 1;  /* 0だと危険なので */
 
                 remos->bands[j].hist_max = 255;
-                remos->bands[j].range_bottom = 0;
-                remos->bands[j].range_top = 255;
 
                 // ビット数などを指定
                 remos->bands[j].byte_per_sample = 1;
