@@ -40,6 +40,7 @@
 
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
+#pragma link "CSPIN"
 #pragma resource "*.dfm"
 TSatViewMainForm *SatViewMainForm;
 
@@ -1567,6 +1568,8 @@ void TSatViewMainForm::DrawHist( struct REMOS_FRONT_BAND *box )
     int h;
     int y;
     int i;
+    int pos_l;
+    int pos_r;
     double max;
 
     h = box->img_hist->Height;
@@ -1591,8 +1594,12 @@ void TSatViewMainForm::DrawHist( struct REMOS_FRONT_BAND *box )
     	box->band->hist_max_reduce_topbottom = 1;
     }
 
+    /* •`‰æˆÊ’uŒvŽZ */
+    pos_l = ( box->band->range_bottom - box->band->range_min ) / ( box->band->range_max - box->band->range_min ) * 255;
+    pos_r = ( box->band->range_top - box->band->range_min ) / ( box->band->range_max - box->band->range_min ) * 255;
+
     /* ƒqƒXƒgƒOƒ‰ƒ€•`‰æ */
-    for ( i = 0; i < box->band->range_bottom; i++ ) {
+    for ( i = 0; i <= pos_l; i++ ) {
         if ( HistReduceMaxCheckBox->Checked ) {
             max = box->band->hist[i] / (double)box->band->hist_max_reduce_topbottom;
         } else {
@@ -1610,7 +1617,7 @@ void TSatViewMainForm::DrawHist( struct REMOS_FRONT_BAND *box )
         box->img_hist->Canvas->LineTo( i, 0 );
     }
 
-    for ( i = box->band->range_bottom; i < box->band->range_top; i++ ) {
+    for ( i = pos_l; i <= pos_r; i++ ) {
         if ( HistReduceMaxCheckBox->Checked ) {
             max = box->band->hist[i] / (double)box->band->hist_max_reduce_topbottom;
         } else {
@@ -1628,7 +1635,7 @@ void TSatViewMainForm::DrawHist( struct REMOS_FRONT_BAND *box )
         box->img_hist->Canvas->LineTo( i, 0 );
     }
 
-    for ( i = box->band->range_top; i < 256; i++ ) {
+    for ( i = pos_r; i < 256; i++ ) {
         if ( HistReduceMaxCheckBox->Checked ) {
             max = box->band->hist[i] / (double)box->band->hist_max_reduce_topbottom;
         } else {

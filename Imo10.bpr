@@ -16,8 +16,8 @@
       ColorBar.dfm ColorBarConfigUnit.dfm ColorMapConfigUnit.dfm 
       PresetFormAGDEMUnit.dfm"/>
     <LIBFILES value=""/>
-    <LIBRARIES value="dclusr.lib vclx.lib rtl.lib vcl.lib"/>
-    <SPARELIBS value="vcl.lib rtl.lib vclx.lib dclusr.lib"/>
+    <LIBRARIES value="bcbsmp.lib dclusr.lib vclx.lib rtl.lib vcl.lib"/>
+    <SPARELIBS value="vcl.lib rtl.lib vclx.lib dclusr.lib bcbsmp.lib"/>
     <PACKAGES value="vcl.bpi rtl.bpi vclx.bpi bcbsmp.bpi dbrtl.bpi adortl.bpi vcldb.bpi 
       qrpt.bpi bdertl.bpi vcldbx.bpi dsnap.bpi cds.bpi bdecds.bpi teeui.bpi 
       teedb.bpi tee.bpi teeqr.bpi ibxpress.bpi visualclx.bpi visualdbclx.bpi 

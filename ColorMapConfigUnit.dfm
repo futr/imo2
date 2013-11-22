@@ -1,10 +1,10 @@
 object ColorMapConfigForm: TColorMapConfigForm
-  Left = 955
-  Top = 231
+  Left = 997
+  Top = 237
   BorderStyle = bsDialog
   Caption = #12524#12505#12523#12473#12521#12452#12473
   ClientHeight = 615
-  ClientWidth = 400
+  ClientWidth = 382
   Color = clBtnFace
   Font.Charset = SHIFTJIS_CHARSET
   Font.Color = clWindowText
@@ -67,21 +67,21 @@ object ColorMapConfigForm: TColorMapConfigForm
   object LevelEditorGroupBox: TGroupBox
     Left = 136
     Top = 228
-    Width = 253
+    Width = 237
     Height = 149
     Caption = #33394#12392#20516#12398#35373#23450
     TabOrder = 2
     object Label1: TLabel
       Left = 126
       Top = 52
-      Width = 113
+      Width = 101
       Height = 12
-      Caption = #12414#12391#12434#20197#19979#12398#33394#12391#22615#12427
+      Caption = #12414#12391#12434#19979#12398#33394#12391#22615#12427
     end
     object Bevel1: TBevel
       Left = 8
       Top = 96
-      Width = 237
+      Width = 221
       Height = 14
       Shape = bsBottomLine
     end
@@ -97,7 +97,7 @@ object ColorMapConfigForm: TColorMapConfigForm
       Text = '0'
     end
     object AddLevelButton: TButton
-      Left = 166
+      Left = 150
       Top = 116
       Width = 75
       Height = 25
@@ -109,7 +109,7 @@ object ColorMapConfigForm: TColorMapConfigForm
       OnClick = AddLevelButtonClick
     end
     object DeleteLevelButton: TButton
-      Left = 86
+      Left = 70
       Top = 116
       Width = 75
       Height = 25
@@ -138,7 +138,7 @@ object ColorMapConfigForm: TColorMapConfigForm
     object LevelColorPanel: TPanel
       Left = 12
       Top = 76
-      Width = 149
+      Width = 133
       Height = 25
       Hint = #12524#12505#12523#12398#33394#12434#36984#12406
       ParentShowHint = False
@@ -147,7 +147,7 @@ object ColorMapConfigForm: TColorMapConfigForm
       OnClick = LevelColorPanelClick
     end
     object SelectColorButton: TButton
-      Left = 166
+      Left = 150
       Top = 76
       Width = 75
       Height = 25
@@ -187,14 +187,14 @@ object ColorMapConfigForm: TColorMapConfigForm
   object PreViewGroupBox: TGroupBox
     Left = 136
     Top = 52
-    Width = 253
+    Width = 237
     Height = 169
     Caption = #12503#12524#12499#12517#12540
     TabOrder = 1
     object PreviewImage: TImage
       Left = 2
       Top = 14
-      Width = 249
+      Width = 233
       Height = 153
       Align = alClient
     end
@@ -202,7 +202,7 @@ object ColorMapConfigForm: TColorMapConfigForm
   object ExpGroupBox: TGroupBox
     Left = 12
     Top = 516
-    Width = 285
+    Width = 269
     Height = 89
     Caption = #24335#12392#21336#20301
     TabOrder = 3
@@ -225,7 +225,7 @@ object ColorMapConfigForm: TColorMapConfigForm
     object ExpEdit: TEdit
       Left = 92
       Top = 20
-      Width = 181
+      Width = 165
       Height = 20
       Hint = #30011#32032#20516#12434#22793#25563#12377#12427#24335
       ParentShowHint = False
@@ -237,7 +237,7 @@ object ColorMapConfigForm: TColorMapConfigForm
     object UnitStrEdit: TEdit
       Left = 92
       Top = 52
-      Width = 181
+      Width = 165
       Height = 20
       Hint = #24335#12391#35336#31639#12373#12428#12427#20516#12398#21336#20301#12398#25991#23383
       ParentShowHint = False
@@ -248,7 +248,7 @@ object ColorMapConfigForm: TColorMapConfigForm
     end
   end
   object CancelButton: TButton
-    Left = 308
+    Left = 292
     Top = 580
     Width = 79
     Height = 25
@@ -260,7 +260,7 @@ object ColorMapConfigForm: TColorMapConfigForm
     OnClick = CancelButtonClick
   end
   object ClearButton: TButton
-    Left = 308
+    Left = 292
     Top = 520
     Width = 79
     Height = 25
@@ -274,7 +274,7 @@ object ColorMapConfigForm: TColorMapConfigForm
   object GroupBox1: TGroupBox
     Left = 12
     Top = 384
-    Width = 377
+    Width = 361
     Height = 125
     Caption = #12503#12522#12475#12483#12488
     TabOrder = 6
@@ -287,7 +287,7 @@ object ColorMapConfigForm: TColorMapConfigForm
       FocusControl = MinLevelEdit
     end
     object Label7: TLabel
-      Left = 232
+      Left = 216
       Top = 68
       Width = 53
       Height = 12
@@ -304,7 +304,7 @@ object ColorMapConfigForm: TColorMapConfigForm
     object PreSetComboBox: TComboBox
       Left = 12
       Top = 20
-      Width = 357
+      Width = 341
       Height = 36
       Style = csOwnerDrawFixed
       ItemHeight = 30
@@ -322,7 +322,7 @@ object ColorMapConfigForm: TColorMapConfigForm
       OnChange = MinLevelEditChange
     end
     object MaxLevelEdit: TEdit
-      Left = 292
+      Left = 276
       Top = 64
       Width = 61
       Height = 20
@@ -331,7 +331,7 @@ object ColorMapConfigForm: TColorMapConfigForm
       OnChange = MaxLevelEditChange
     end
     object SetPresetButton: TButton
-      Left = 292
+      Left = 276
       Top = 92
       Width = 75
       Height = 25
@@ -341,7 +341,7 @@ object ColorMapConfigForm: TColorMapConfigForm
       OnClick = SetPresetButtonClick
     end
     object MaxLevelUpDown: TUpDown
-      Left = 353
+      Left = 337
       Top = 64
       Width = 15
       Height = 20
@@ -366,7 +366,7 @@ object ColorMapConfigForm: TColorMapConfigForm
     end
   end
   object CloseButton: TButton
-    Left = 308
+    Left = 292
     Top = 552
     Width = 79
     Height = 25
