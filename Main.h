@@ -450,7 +450,7 @@ public:		// ÉÜÅ[ÉUÅ[êÈåæ
 
     /* ï`âÊ */
     void __fastcall DrawImg( void );
-    void __fastcall DrawImg( TImage *screen, TImage *back_screen, bool drawModeExp, int zoompos, int img_cent_x, int img_cent_y, ColorMap *cmap );
+    void __fastcall DrawImg( TImage *screen, Graphics::TBitmap *back_screen, bool drawModeExp, int zoompos, int img_cent_x, int img_cent_y, ColorMap *cmap );
 };
 //---------------------------------------------------------------------------
 extern PACKAGE TSatViewMainForm *SatViewMainForm;
