@@ -233,9 +233,6 @@ struct REMOS_FRONT_BAND *TSatViewMainForm::MakeBandBox( struct REMOS_BAND *band,
     box->band = band;
     box->fln = new AnsiString( fln );
 
-    box->band->range_bottom = 255;
-    box->band->range_bottom = 0;
-
     box->panel_cont->Align  = alTop;
     box->panel_cont->Parent = BandList;
     box->panel_cont->Height = 100;
@@ -377,8 +374,8 @@ struct REMOS_FRONT_BAND *TSatViewMainForm::MakeBandBox( struct REMOS_BAND *band,
     box->btn_max->Caption     = "<>";
     box->btn_max->Font->Size  = 8;
 
-    box->band->range_bottom = 0;
-    box->band->range_top = 255;
+    box->band->range_bottom = box->band->range_bottom;
+    box->band->range_top    = box->band->range_top;
 
     box->hist_click = false;
 
@@ -1529,6 +1526,7 @@ void __fastcall TSatViewMainForm::HistMouseMove(TObject *Sender,
     int w, h;
     int y;
     int i;
+    float val;
     struct REMOS_FRONT_BAND *box;
 
     /* BNAD特定 */
@@ -1545,22 +1543,34 @@ void __fastcall TSatViewMainForm::HistMouseMove(TObject *Sender,
     	return;
     }
 
+    /* Xの位置から値作成 */
+    val = X / 255.0 * ( box->band->range_max - box->band->range_min ) + box->band->range_min;
+
     /* レンジ設定 */
     if ( box->hist_button == mbLeft ) {
-    	if ( X < box->updown_top->Position ) {
-        	box->updown_bottom->Position = X;
+    	if ( val < box->band->range_top ) {
+            box->band->range_bottom = val;
         } else {
-        	box->updown_bottom->Position = ( X = box->updown_top->Position - 1 );
+            box->band->range_bottom = box->band->range_top;
+
+            X = ( box->band->range_top - box->band->range_min ) / ( box->band->range_max - box->band->range_min ) * 255;
         }
     } else if ( box->hist_button == mbRight ) {
-    	if ( X > box->updown_bottom->Position ) {
-        	box->updown_top->Position = X;
+    	if ( val > box->band->range_bottom ) {
+        	box->band->range_top = val;
         } else {
-        	box->updown_top->Position = ( X = box->updown_bottom->Position + 1 );
+            box->band->range_top = box->band->range_bottom;
+
+            X = ( box->band->range_top - box->band->range_min ) / ( box->band->range_max - box->band->range_min ) * 255;
         }
     }
 
+    /* 値をエディットに読み込む */
+    box->edit_bottom->Text = FloatToStr( box->band->range_bottom );
+    box->edit_top->Text    = FloatToStr( box->band->range_top );
+
     /* 数字を描く */
+    box->img_hist->Canvas->Font->Color = clBlack;
     box->img_hist->Canvas->TextOutA( 2 + X, 2, IntToStr( box->band->hist[X] ) );
 }
 //---------------------------------------------------------------------------
@@ -1575,17 +1585,6 @@ void TSatViewMainForm::DrawHist( struct REMOS_FRONT_BAND *box )
     double max;
 
     h = box->img_hist->Height;
-
-    // 8bitでなければ強制停止
-    /*
-    if ( box->band->bits != 8 ) {
-    	box->img_hist->Canvas->Brush->Color = clWhite;
-        box->img_hist->Canvas->Font->Color = clRed;
-        box->img_hist->Canvas->TextOutA( 3, 3, "ヒストグラムを表示できません" );
-
-    	return;
-    }
-    */
 
     /* 0除算防止 */
     if ( box->band->hist_max == 0 ) {
@@ -1653,6 +1652,14 @@ void TSatViewMainForm::DrawHist( struct REMOS_FRONT_BAND *box )
         box->img_hist->Canvas->Pen->Color = (TColor)RGB( 80, 80, 80 );
         box->img_hist->Canvas->MoveTo( i, h - y );
         box->img_hist->Canvas->LineTo( i, 0 );
+    }
+
+    /* ヒストグラムが作られてなければ警告 */
+    if ( !box->hist_maked ) {
+        box->img_hist->Canvas->Font->Size   = 9;
+        box->img_hist->Canvas->Font->Color  = clRed;
+        box->img_hist->Canvas->Brush->Color = clWhite;
+        box->img_hist->Canvas->TextOutA( 1, 1, "ヒストグラムが作成されていません" );
     }
 }
 //---------------------------------------------------------------------------
@@ -1729,12 +1736,11 @@ void __fastcall TSatViewMainForm::PleaseClick( void )
     /* 更新メッセージ */
     AnsiString str;
 
-    // str = "クリックしてください";
-    // SatImage->Canvas->Font->Size   = 18;
-    // SatImage->Canvas->Font->Color  = clBlue;
-    // SatImage->Canvas->Brush->Color = clWhite;
-    // SatImage->Canvas->TextOutA( 10, 10, str );
-
+    str = "再描画してください";
+    SatImage->Canvas->Font->Size   = 9;
+    SatImage->Canvas->Font->Color  = clRed;
+    SatImage->Canvas->Brush->Color = clWhite;
+    SatImage->Canvas->TextOutA( 10, 10, str );
 }
 //---------------------------------------------------------------------------
 AnsiString TSatViewMainForm::GetLon( int x, int y )
@@ -2217,7 +2223,6 @@ void __fastcall TSatViewMainForm::ScrImgHorScroll(TObject *Sender,
     }
 }
 //---------------------------------------------------------------------------
-
 void __fastcall TSatViewMainForm::ScrImgVertScroll(TObject *Sender,
       TScrollCode ScrollCode, int &ScrollPos)
 {
@@ -2440,8 +2445,12 @@ void __fastcall TSatViewMainForm::MaxBtnClick(TObject *Sender)
     /* BNAD特定 */
     box = (struct REMOS_FRONT_BAND *)( ( (TBitBtn *)Sender )->Parent->Tag );
 
-    box->updown_bottom->Position = 0;
-    box->updown_top->Position = 255;
+    /* 最大最小に */
+    box->band->range_bottom = box->band->range_min;
+    box->band->range_top    = box->band->range_max;
+
+    /* 更新 */
+    UpdateBandBox( box );
 
     DrawImg();
 }
@@ -3749,6 +3758,11 @@ void __fastcall TSatViewMainForm::OpenFiles( void )
                     MakeHist( box );
                 } else {
                     box->hist_maked = false;
+
+                    /* ヒストグラムクリア */
+                    for ( int k = 0; k < 256; k++ ) {
+                    	box->band->hist[i] = 0;
+                    }
                 }
 
                 /* 更新 */
@@ -3813,9 +3827,8 @@ void __fastcall TSatViewMainForm::OpenFiles( void )
                             /* 0除算防止などのため適当な初期値を代入 */
                             remos->bands[j].hist_max_reduce_topbottom = 255;
                             remos->bands[j].hist_max = 255;
-                            remos->bands[j].range_bottom = 0;
-                            remos->bands[j].range_top = 255;
 
+                            /* ヒストグラムクリア */
                             for ( int k = 0; k < 256; k++ ) {
                                 remos->bands[j].hist[k] = 0;
                             }

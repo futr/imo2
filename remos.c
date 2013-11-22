@@ -767,11 +767,6 @@ void remos_calc_auto_range( struct REMOS_BAND *band, double per, int topbottom )
 	int skip;
 	int i, j;
 	int start, end;
-
-	/* 8bitモードか？ */
-	if ( band->bits != 8 ) {
-		return;
-	}
 	
 	/* 個数決定 */
 	skip  = band->line_count * band->line_img_width * per;
@@ -785,7 +780,7 @@ void remos_calc_auto_range( struct REMOS_BAND *band, double per, int topbottom )
 		
 		/* 超えた？ */
 		if ( count > skip ) {
-			band->range_bottom = i;
+			band->range_bottom = i / 255.0 * ( band->range_max - band->range_min ) + band->range_min;
 			
 			break;
 		}
@@ -798,7 +793,7 @@ void remos_calc_auto_range( struct REMOS_BAND *band, double per, int topbottom )
 		
 		/* 超えた？ */
 		if ( count > skip ) {
-			band->range_top = 255 - i;
+			band->range_top = ( 255 - i ) / 255.0 * ( band->range_max - band->range_min ) + band->range_min;;
 			
 			break;
 		}
