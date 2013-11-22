@@ -303,11 +303,11 @@ struct REMOS_FRONT_BAND *TSatViewMainForm::MakeBandBox( struct REMOS_BAND *band,
 
     box->edit_bottom->Left = 24;
     box->edit_bottom->Top = 72;
-    box->edit_bottom->Width = 25;
+    box->edit_bottom->Width = 40;
 
     box->edit_top->Top = 72;
     box->edit_top->Left = 84;
-    box->edit_top->Width = 25;
+    box->edit_top->Width = 40;
 
     // box->updown_bottom->Associate = box->edit_bottom;
     // box->updown_top->Associate = box->edit_top;
@@ -1664,16 +1664,57 @@ void __fastcall TSatViewMainForm::BandEditUpChange(TObject *Sender)
     box = (struct REMOS_FRONT_BAND *)( ( (TBitBtn *)Sender )->Parent->Tag );
 
     /* 現在の値 */
-    val = box->edit_top->Text.ToDouble();
+    try {
+    	val = box->edit_top->Text.ToDouble();
+    } catch( ... ) {
+    	// 数字でなければ何もしない
+        return;
+    }
 
     /* オーバーしていれば最小と等しくする */
     if ( box->band->range_bottom > val ) {
     	val = box->band->range_bottom;
+
+        // エディットはいじらない
+        // box->edit_top->Text = FloatToStr( val );
     }
 
     /* 値更新 */
     box->band->range_top = val;
-    box->edit_top->Text  = FloatToStr( val );
+
+    /* 画面更新 */
+    DrawHist( box );
+
+	PleaseClick();
+}
+//---------------------------------------------------------------------------
+void __fastcall TSatViewMainForm::BandEditDownChange(TObject *Sender)
+{
+	/* ヒストグラム変更 */
+    struct REMOS_FRONT_BAND *box;
+    float val;
+
+    /* BNAD特定 */
+    box = (struct REMOS_FRONT_BAND *)( ( (TBitBtn *)Sender )->Parent->Tag );
+
+    /* 現在の値 */
+    try {
+    	val = box->edit_bottom->Text.ToDouble();
+    } catch( ... ) {
+    	// 数字でなければ何もしない
+        return;
+    }
+
+    /* オーバーしていれば最大と等しくする */
+    if ( box->band->range_top < val ) {
+    	val = box->band->range_top;
+
+        // エディットはいじらない
+    	// box->edit_bottom->Text  = FloatToStr( val );
+    }
+
+    /* 値更新 */
+    box->band->range_bottom = val;
 
     /* 画面更新 */
     DrawHist( box );
@@ -1692,33 +1733,6 @@ void __fastcall TSatViewMainForm::PleaseClick( void )
     // SatImage->Canvas->Brush->Color = clWhite;
     // SatImage->Canvas->TextOutA( 10, 10, str );
 
-}
-//---------------------------------------------------------------------------
-void __fastcall TSatViewMainForm::BandEditDownChange(TObject *Sender)
-{
-	/* ヒストグラム変更 */
-    struct REMOS_FRONT_BAND *box;
-    float val;
-
-    /* BNAD特定 */
-    box = (struct REMOS_FRONT_BAND *)( ( (TBitBtn *)Sender )->Parent->Tag );
-
-    /* 現在の値 */
-    val = box->edit_bottom->Text.ToDouble();
-
-    /* オーバーしていれば最大と等しくする */
-    if ( box->band->range_top < val ) {
-    	val = box->band->range_top;
-    }
-
-    /* 値更新 */
-    box->band->range_bottom = val;
-    box->edit_bottom->Text  = FloatToStr( val );
-
-    /* 画面更新 */
-    DrawHist( box );
-
-	PleaseClick();
 }
 //---------------------------------------------------------------------------
 AnsiString TSatViewMainForm::GetLon( int x, int y )
