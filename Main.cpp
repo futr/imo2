@@ -309,8 +309,8 @@ struct REMOS_FRONT_BAND *TSatViewMainForm::MakeBandBox( struct REMOS_BAND *band,
     box->edit_top->Left = 84;
     box->edit_top->Width = 25;
 
-    box->updown_bottom->Associate = box->edit_bottom;
-    box->updown_top->Associate = box->edit_top;
+    // box->updown_bottom->Associate = box->edit_bottom;
+    // box->updown_top->Associate = box->edit_top;
 
     box->updown_bottom->Max = 255;
     box->updown_top->Max = 255;
