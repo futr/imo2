@@ -4,9 +4,13 @@
 *.tds
 *.cgl
 
+# Windows exe
+*.exe
+
 # directories
 bk/
 bk_2/
 imo2bk/
 libtiff/
 otherutm/
+doc/
