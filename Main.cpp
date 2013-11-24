@@ -37,6 +37,7 @@
 #include "econf.h"
 #include "ColorMapConfigUnit.h"
 #include "PresetFormAGDEMUnit.h"
+#include "PresetLS8_THM.h"
 
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
@@ -3134,8 +3135,8 @@ void __fastcall TSatViewMainForm::MI_C_LS_THMClick(TObject *Sender)
     }
 
     // 表示
-    PresetFormLS_THM->Left = SatViewMainForm->Left + SatViewMainForm->Width / 2 - PresetFormTHM->Width / 2;
-    PresetFormLS_THM->Top = SatViewMainForm->Top + SatViewMainForm->Height / 2 - PresetFormTHM->Height / 2;
+    PresetFormLS_THM->Left = SatViewMainForm->Left + SatViewMainForm->Width / 2 - PresetFormLS_THM->Width / 2;
+    PresetFormLS_THM->Top = SatViewMainForm->Top + SatViewMainForm->Height / 2 - PresetFormLS_THM->Height / 2;
 
 	PresetFormLS_THM->Show();
 }
@@ -3675,6 +3676,11 @@ void __fastcall TSatViewMainForm::OpenFiles( void )
                             land_8_k2_10 = econf_as_double( econf_search( &ef, "K2_CONSTANT_BAND_10" ) );
                             land_8_k1_11 = econf_as_double( econf_search( &ef, "K1_CONSTANT_BAND_11" ) );
                             land_8_k2_11 = econf_as_double( econf_search( &ef, "K2_CONSTANT_BAND_11" ) );
+
+                            land_8_rad_add_10 = econf_as_double( econf_search( &ef, "RADIANCE_ADD_BAND_10" ) );
+                            land_8_rad_add_11 = econf_as_double( econf_search( &ef, "RADIANCE_ADD_BAND_11" ) );
+                            land_8_rad_mul_10 = econf_as_double( econf_search( &ef, "RADIANCE_MULT_BAND_10" ) );
+                            land_8_rad_mul_11 = econf_as_double( econf_search( &ef, "RADIANCE_MULT_BAND_11" ) );
                         } else {
                             b_config_land = false;
                             b_config_resolution = false;
@@ -4061,6 +4067,73 @@ void __fastcall TSatViewMainForm::disableBandRange( struct REMOS_FRONT_BAND *box
     box->band->range_top    = box->band->range_max;
 
     UpdateBandBox( box );
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TSatViewMainForm::MI_C_LS8_THMClick(TObject *Sender)
+{
+	/* LANDSAT8_THMプリセットを表示 */
+    int i;
+    struct REMOS_FRONT_BAND *box;
+
+    /* ファイルが開かれて無ければ開かない */
+    if ( !b_open ) {
+    	return;
+    }
+
+    /* 初期設定 */
+    PresetFormLS8_THM->BandComboBox->Clear();
+
+    /* バンド登録 */
+    for ( i = 0; i < list_band->Count; i++ ) {
+    	box = (struct REMOS_FRONT_BAND *)list_band->Items[i];
+
+        PresetFormLS8_THM->BandComboBox->Items->Add( box->label_name->Caption );
+    }
+
+    PresetFormLS8_THM->BandComboBox->ItemIndex = 0;
+
+    // LMAXとLMINが読み込めれば設定、読み込めなければデフォルト値
+    if ( b_config_land && b_config_ls8 ) {
+    	PresetFormLS8_THM->k1_10 = land_8_k1_10;
+        PresetFormLS8_THM->k1_11 = land_8_k1_11;
+        PresetFormLS8_THM->k2_10 = land_8_k2_10;
+        PresetFormLS8_THM->k2_11 = land_8_k2_11;
+
+        PresetFormLS8_THM->rad_add_10 = land_8_rad_add_10;
+        PresetFormLS8_THM->rad_add_11 = land_8_rad_add_11;
+        PresetFormLS8_THM->rad_mul_10 = land_8_rad_mul_10;
+        PresetFormLS8_THM->rad_mul_11 = land_8_rad_mul_11;
+    } else {
+    	// デフォルト値
+    	PresetFormLS8_THM->k1_10 = 774.89;
+        PresetFormLS8_THM->k1_11 = 480.89;
+        PresetFormLS8_THM->k2_10 = 1321.08;
+        PresetFormLS8_THM->k2_11 = 1201.14;
+
+        PresetFormLS8_THM->rad_add_10 = 0.1;
+        PresetFormLS8_THM->rad_add_11 = 0.1;
+        PresetFormLS8_THM->rad_mul_10 = 3.3420E-04;
+        PresetFormLS8_THM->rad_mul_11 = 3.3420E-04;
+    }
+
+    // 設定を読みこませる
+    PresetFormLS8_THM->readSetting();
+
+    // 警告を出す
+    if ( b_config_ls8 == false ) {
+    	AnsiString msg;
+
+        msg = "Landsat8の設定データーが読み込まれていません。\n温度表示を正確に行えない可能性があります。\n各設定値はデフォルト値が使用されます。";
+
+    	Application->MessageBoxA( msg.c_str(), "情報", MB_ICONINFORMATION|MB_OK );
+    }
+
+    // 表示
+    PresetFormLS8_THM->Left = SatViewMainForm->Left + SatViewMainForm->Width / 2 - PresetFormLS8_THM->Width / 2;
+    PresetFormLS8_THM->Top = SatViewMainForm->Top + SatViewMainForm->Height / 2 - PresetFormLS8_THM->Height / 2;
+
+	PresetFormLS8_THM->Show();
 }
 //---------------------------------------------------------------------------
 

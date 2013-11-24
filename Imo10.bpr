@@ -8,13 +8,14 @@
       About.obj PresetNDVI.obj PresetHTM.obj econf.obj PresetLS_THM.obj 
       HelpFormCode.obj SaveFormUnit.obj ebmp.obj ColorBar.obj 
       ColorBarConfigUnit.obj colormap.obj ColorMapConfigUnit.obj 
-      PresetFormAGDEMUnit.obj geotiffrec.obj remos_alos_config.obj"/>
+      PresetFormAGDEMUnit.obj geotiffrec.obj remos_alos_config.obj 
+      PresetLS8_THM.obj"/>
     <RESFILES value="Imo10.res"/>
     <DEFFILE value=""/>
     <RESDEPEN value="$(RESFILES) Main.dfm Status.dfm PixValue.dfm About.dfm PresetNDVI.dfm 
       PresetHTM.dfm PresetLS_THM.dfm HelpFormCode.dfm SaveFormUnit.dfm 
       ColorBar.dfm ColorBarConfigUnit.dfm ColorMapConfigUnit.dfm 
-      PresetFormAGDEMUnit.dfm"/>
+      PresetFormAGDEMUnit.dfm PresetLS8_THM.dfm"/>
     <LIBFILES value=""/>
     <LIBRARIES value="bcbsmp.lib dclusr.lib vclx.lib rtl.lib vcl.lib"/>
     <SPARELIBS value="vcl.lib rtl.lib vclx.lib dclusr.lib bcbsmp.lib"/>
@@ -78,6 +79,7 @@
       <FILE FILENAME="PresetFormAGDEMUnit.cpp" FORMNAME="PresetFormAGDEM" UNITNAME="PresetFormAGDEMUnit" CONTAINERID="C/C++ コンパイラ" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="geotiffrec.cpp" FORMNAME="" UNITNAME="geotiffrec" CONTAINERID="C/C++ コンパイラ" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="remos_alos_config.cpp" FORMNAME="" UNITNAME="remos_alos_config" CONTAINERID="C/C++ コンパイラ" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="PresetLS8_THM.cpp" FORMNAME="PresetFormLS8_THM" UNITNAME="PresetLS8_THM" CONTAINERID="C/C++ コンパイラ" DESIGNCLASS="" LOCALCOMMAND=""/>
   </FILELIST>
   <BUILDTOOLS>
   </BUILDTOOLS>

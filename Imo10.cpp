@@ -16,6 +16,7 @@ USEFORM("ColorBar.cpp", ColorBarForm);
 USEFORM("ColorBarConfigUnit.cpp", ColorBarConfigForm);
 USEFORM("ColorMapConfigUnit.cpp", ColorMapConfigForm);
 USEFORM("PresetFormAGDEMUnit.cpp", PresetFormAGDEM);
+USEFORM("PresetLS8_THM.cpp", PresetFormLS8_THM);
 //---------------------------------------------------------------------------
 WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 {
@@ -36,6 +37,7 @@ WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		Application->CreateForm(__classid(TColorBarConfigForm), &ColorBarConfigForm);
 		Application->CreateForm(__classid(TColorMapConfigForm), &ColorMapConfigForm);
 		Application->CreateForm(__classid(TPresetFormAGDEM), &PresetFormAGDEM);
+		Application->CreateForm(__classid(TPresetFormLS8_THM), &PresetFormLS8_THM);
 		Application->Run();
 	}
 	catch (Exception &exception)

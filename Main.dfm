@@ -1,6 +1,6 @@
 object SatViewMainForm: TSatViewMainForm
-  Left = 138
-  Top = 341
+  Left = 225
+  Top = 156
   Width = 959
   Height = 639
   Caption = 'SatelliteEye'
@@ -1966,8 +1966,12 @@ object SatViewMainForm: TSatViewMainForm
       OnClick = MI_C_TMClick
     end
     object MI_C_LS_THM: TMenuItem
-      Caption = #12521#12531#12489#12469#12483#12488#28201#24230#20998#24067'(&L)'
+      Caption = #12521#12531#12489#12469#12483#12488'7'#28201#24230#20998#24067'(&L)'
       OnClick = MI_C_LS_THMClick
+    end
+    object MI_C_LS8_THM: TMenuItem
+      Caption = #12521#12531#12489#12469#12483#12488'8'#28201#24230#20998#24067'(&M)'
+      OnClick = MI_C_LS8_THMClick
     end
     object MI_C_GDEM: TMenuItem
       Caption = 'ASTER GDEM'#39640#24230#20998#24067'(&A)'

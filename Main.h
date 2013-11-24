@@ -193,6 +193,7 @@ __published:	// IDE 管理のコンポーネント
 	TPanel *DrawButtonPanel;
 	TPanel *SettingStrPanel;
 	TToolButton *TBCurpos;
+	TMenuItem *MI_C_LS8_THM;
 	void __fastcall FormClose(TObject *Sender, TCloseAction &Action);
 	void __fastcall TBOpenClick(TObject *Sender);
 	void __fastcall TBSaveClick(TObject *Sender);
@@ -270,6 +271,7 @@ __published:	// IDE 管理のコンポーネント
 	void __fastcall ShowLevelColorBarButtonClick(TObject *Sender);
 	void __fastcall MI_C_GDEMClick(TObject *Sender);
 	void __fastcall TBCurposClick(TObject *Sender);
+	void __fastcall MI_C_LS8_THMClick(TObject *Sender);
 private:	// ユーザー宣言
 public:
 	TList *list_file;				// ファイル用リスト
@@ -367,6 +369,10 @@ public:
     double land_8_k1_11;
     double land_8_k2_10;
     double land_8_k2_11;
+    double land_8_rad_add_10;
+    double land_8_rad_add_11;
+    double land_8_rad_mul_10;
+    double land_8_rad_mul_11;
 
     double conf_lt_lat;
     double conf_lt_lon;

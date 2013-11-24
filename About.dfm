@@ -20,7 +20,7 @@ object AboutForm: TAboutForm
     Top = 12
     Width = 85
     Height = 12
-    Caption = 'SatelliteEye 1.30'
+    Caption = 'SatelliteEye 1.31'
   end
   object Label2: TLabel
     Left = 84
@@ -190,7 +190,7 @@ object AboutForm: TAboutForm
     Top = 100
     Width = 57
     Height = 12
-    Caption = 'remos.c 1.2'
+    Caption = 'remos.c 1.3'
   end
   object Label6: TLabel
     Left = 84
@@ -211,7 +211,7 @@ object AboutForm: TAboutForm
     Top = 116
     Width = 54
     Height = 12
-    Caption = 'econf.c 1.0'
+    Caption = 'econf.c 1.1'
   end
   object Label9: TLabel
     Left = 12

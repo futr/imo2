@@ -3,7 +3,7 @@
 /* !!!!PALSAT対応のためいじり中 2013 0607 */
 /* 特にfloat remos_data_to_value_band( struct REMOS_BAND *band, unsigned char *data )をいじってるけどまだ正しいか確認していない */
 
-/* 汎用衛星データリーダーライブラリ ver1.2 */
+/* 汎用衛星データリーダーライブラリ ver1.3 */
 /* 結局8bitにしか対応していない ( 無理やりPALSARの16bitだけは対応している ) */
 /* 簡易TIFFアクセス */
 /* 8bit非圧縮オンリー */
