@@ -248,7 +248,7 @@ double econf_as_double( struct ECONF_LINE *line )
 
 	/* Ç¢ÇÁÇ»Ç¢ï∂éöÇè¡Ç∑ */
 	for ( text = buf; *text != '\0'; text++ ) {
-		if ( !isdigit( *text ) && *text != '-' && *text != '.' ) {
+		if ( !isdigit( *text ) && *text != '-' && *text != '.' && *text != 'E' && *text != 'e' ) {
 			*text = ' ';
 		}
 	}
