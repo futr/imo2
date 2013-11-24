@@ -61,11 +61,7 @@ void __fastcall TPresetFormAGDEM::BtnOkClick(TObject *Sender)
     SatViewMainForm->LevelDrawRadioButton->Checked = true;
 
     /* ヒストグラム設定解除 */
-    ( (struct REMOS_FRONT_BAND *)SatViewMainForm->list_band->Items[BandComboBox->ItemIndex] )->updown_bottom->Position = 0;
-    ( (struct REMOS_FRONT_BAND *)SatViewMainForm->list_band->Items[BandComboBox->ItemIndex] )->updown_top->Position = 255;
-
-    SatViewMainForm->UpdateBandBox( (struct REMOS_FRONT_BAND *)SatViewMainForm->list_band->Items[BandComboBox->ItemIndex] );
-
+    SatViewMainForm->disableBandRange( (struct REMOS_FRONT_BAND *)SatViewMainForm->list_band->Items[BandComboBox->ItemIndex] );
 
 	// ボタン無効
     //this->Visible = false;
