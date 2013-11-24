@@ -1,6 +1,6 @@
 object SatViewMainForm: TSatViewMainForm
-  Left = 236
-  Top = 238
+  Left = 138
+  Top = 341
   Width = 959
   Height = 639
   Caption = 'SatelliteEye'

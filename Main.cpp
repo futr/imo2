@@ -2005,15 +2005,14 @@ void __fastcall TSatViewMainForm::BlueBtnClick(TObject *Sender)
 {
 	/* 自分を青に */
     struct REMOS_FRONT_BAND *box;
-    char band[2];
+    AnsiString exp;
 
     /* BNAD特定 */
     box = (struct REMOS_FRONT_BAND *)( ( (TBitBtn *)Sender )->Parent->Tag );
 
-    band[0] = tolower( (char)( box->index + 0x41 ) );
-    band[1] = '\0';
+    exp.sprintf( "( %c - %f ) / ( %f - %f ) * 255", tolower( (char)( box->index + 0x41 ) ), box->band->range_min, box->band->range_max, box->band->range_min );
 
-    ExpEditB->Text = band;
+    ExpEditB->Text = exp;
 
     // 必要なら式モードへ
     if ( !ExpDrawRadioButton->Checked ) {
@@ -2027,15 +2026,14 @@ void __fastcall TSatViewMainForm::GreenBtnClick(TObject *Sender)
 {
 	/* 自分を緑に */
     struct REMOS_FRONT_BAND *box;
-    char band[2];
+    AnsiString exp;
 
     /* BNAD特定 */
     box = (struct REMOS_FRONT_BAND *)( ( (TBitBtn *)Sender )->Parent->Tag );
 
-    band[0] = tolower( (char)( box->index + 0x41 ) );
-    band[1] = '\0';
+    exp.sprintf( "( %c - %f ) / ( %f - %f ) * 255", tolower( (char)( box->index + 0x41 ) ), box->band->range_min, box->band->range_max, box->band->range_min );
 
-    ExpEditG->Text = band;
+    ExpEditG->Text = exp;
 
     // 必要なら式モードへ
     if ( !ExpDrawRadioButton->Checked ) {
@@ -2049,15 +2047,14 @@ void __fastcall TSatViewMainForm::RedBtnClick(TObject *Sender)
 {
 	/* 自分を赤に */
     struct REMOS_FRONT_BAND *box;
-    char band[2];
+    AnsiString exp;
 
     /* BNAD特定 */
     box = (struct REMOS_FRONT_BAND *)( ( (TBitBtn *)Sender )->Parent->Tag );
 
-    band[0] = tolower( (char)( box->index + 0x41 ) );
-    band[1] = '\0';
+    exp.sprintf( "( %c - %f ) / ( %f - %f ) * 255", tolower( (char)( box->index + 0x41 ) ), box->band->range_min, box->band->range_max, box->band->range_min );
 
-    ExpEditR->Text = band;
+    ExpEditR->Text = exp;
 
     // 必要なら式モードへ
     if ( !ExpDrawRadioButton->Checked ) {
@@ -2071,17 +2068,16 @@ void __fastcall TSatViewMainForm::WBBtnClick(TObject *Sender)
 {
 	/* 白黒に */
     struct REMOS_FRONT_BAND *box;
-    char band[2];
+    AnsiString exp;
 
     /* BNAD特定 */
     box = (struct REMOS_FRONT_BAND *)( ( (TBitBtn *)Sender )->Parent->Tag );
 
-    band[0] = tolower( (char)( box->index + 0x41 ) );
-    band[1] = '\0';
+    exp.sprintf( "( %c - %f ) / ( %f - %f ) * 255", tolower( (char)( box->index + 0x41 ) ), box->band->range_min, box->band->range_max, box->band->range_min );
 
-    ExpEditR->Text = band;
-    ExpEditG->Text = band;
-	ExpEditB->Text = band;
+    ExpEditG->Text = exp;
+    ExpEditB->Text = exp;
+    ExpEditR->Text = exp;
 
     // 必要なら式モードへ
     if ( !ExpDrawRadioButton->Checked ) {
