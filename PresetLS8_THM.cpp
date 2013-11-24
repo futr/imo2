@@ -52,12 +52,9 @@ void __fastcall TPresetFormLS8_THM::BtnOkClick(TObject *Sender)
     char *fmt_cb_r;
     char *fmt_cb_g;
 	char *fmt_cb_b;
-
-
     char thm;
     char band;
 
-    int temp_width = TempUpDown->Position - TempMinUpDown->Position;
     int max_temp = TempUpDown->Position;
     int min_temp = TempMinUpDown->Position;
 
