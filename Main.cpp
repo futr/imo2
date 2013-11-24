@@ -3629,7 +3629,7 @@ void __fastcall TSatViewMainForm::OpenFiles( void )
                     /* 認識 */
                     if ( econf_recog( &ef ) ) {
                         if ( econf_search( &ef, "LMAX_BAND61" ) != NULL ) {
-                            /* LANDSAT用発見 */
+                            /* LANDSAT(8未満)用発見 */
                             b_config_land = true;
 
                             // 温度設定読み込み
@@ -3676,6 +3676,14 @@ void __fastcall TSatViewMainForm::OpenFiles( void )
                                     break;
                                 }
                             }
+                        } else if ( econf_search( &ef, "K1_CONSTANT_BAND_10" ) != NULL ) {
+                        	/* LANDSAT8用 */
+                            b_config_land = true;
+
+                            land_8_k1_10 = econf_as_double( econf_search( &ef, "K1_CONSTANT_BAND_10" ) );
+                            land_8_k2_10 = econf_as_double( econf_search( &ef, "K2_CONSTANT_BAND_10" ) );
+                            land_8_k1_11 = econf_as_double( econf_search( &ef, "K1_CONSTANT_BAND_11" ) );
+                            land_8_k2_11 = econf_as_double( econf_search( &ef, "K2_CONSTANT_BAND_11" ) );
                         } else {
                             b_config_land = false;
                             b_config_resolution = false;
@@ -3688,11 +3696,22 @@ void __fastcall TSatViewMainForm::OpenFiles( void )
                         	b_config_ls7 = false;
                         }
 
+                        // Landsat8かどうか
+                        if ( AnsiString( econf_as_str( econf_search( &ef, "SPACECRAFT_ID" ) ) ) == "\"LANDSAT_8\"" ) {
+                        	b_config_ls8 = true;
+                        } else {
+                        	b_config_ls8 = false;
+                        }
+
                         // 日付文字列
                         if ( econf_search( &ef, "ACQUISITION_DATE" ) ) {
                         	b_config_date = true;
 
                             config_date_str = econf_as_str( econf_search( &ef, "ACQUISITION_DATE" ) );
+                        } else if ( econf_search( &ef, "DATE_ACQUIRED" ) ) {
+                        	b_config_date = true;
+
+                            config_date_str = econf_as_str( econf_search( &ef, "DATE_ACQUIRED" ) );
                         } else {
                         	b_config_date = false;
                         }
@@ -3811,6 +3830,8 @@ void TSatViewMainForm::setSettingStr( void )
 
             if ( b_config_ls7 ) {
             	SettingStrPanel->Caption = SettingStrPanel->Caption + "7";
+            } else if ( b_config_ls8 ) {
+            	SettingStrPanel->Caption = SettingStrPanel->Caption + "8";
             }
         } else if ( b_config_alos ) {
         	SettingStrPanel->Caption = "だいち";
@@ -3854,6 +3875,7 @@ void TSatViewMainForm::clearSetting( void )
     b_config_resolution = false;
     b_config_utm = false;
     b_config_ls7 = false;
+    b_config_ls8 = false;
     b_config_date = false;
     b_config_alos = false;
     b_config_latlon_utm_proj = false;

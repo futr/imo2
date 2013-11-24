@@ -315,6 +315,7 @@ public:
     bool b_config_resolution;		// 解像度設定
     bool b_config_utm;				// UTMモードの座標
     bool b_config_ls7;				// Landsat7である
+    bool b_config_ls8;				// Landsat8である
     bool b_config_alos;				// だいちである。
     bool b_config_date;				// 日付の設定
     bool b_config_latlon_utm_proj;	// 座標指定はlatlonだけどUTM投影
@@ -361,6 +362,11 @@ public:
     double land_lmin_2;
     double land_qcal_min_2;
     double land_qcal_max_2;
+
+    double land_8_k1_10;
+    double land_8_k1_11;
+    double land_8_k2_10;
+    double land_8_k2_11;
 
     double conf_lt_lat;
     double conf_lt_lon;
