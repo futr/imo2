@@ -3260,6 +3260,7 @@ void __fastcall TSatViewMainForm::OpenFiles( void )
     struct ECONF_FILE_CONTAINER ef;
     bool b_hist_calc;
     bool b_new_open = false;
+    bool hist_ask = false;
     Graphics::TBitmap *img_bmp;
     TJPEGImage *img_jpg;
     int ret;
@@ -3274,20 +3275,24 @@ void __fastcall TSatViewMainForm::OpenFiles( void )
     StatusForm->Show();
     Application->ProcessMessages();
 
+    // ヒストグラムを作成するか決定
+    if ( HistCheckBox->Checked ) {
+        b_hist_calc = true;
+    } else {
+        b_hist_calc = false;
+    }
+
     for ( int i = 0; i < OpenDialog->Files->Count; i++ ) {
         /* 対象ファイルが大きすぎて、かつヒストグラムが必要な場合に警告 */
         FindFirst( OpenDialog->Files->Strings[i], faAnyFile, sr );
 
-        if ( HistCheckBox->Checked ) {
-            b_hist_calc = true;
-        } else {
-            b_hist_calc = false;
-        }
-
-        if ( ( sr.Size > 100000000 ) && ( b_hist_calc == true ) ) {
+        if ( ( sr.Size > 100000000 ) && ( b_hist_calc == true ) && ( !hist_ask ) ) {
             if ( Application->MessageBoxA( "ファイルサイズが100MBを超えているためヒストグラム作成に時間がかかる可能性があります。\nヒストグラムを作成しますか？", "情報", MB_ICONINFORMATION|MB_YESNO ) == IDNO ) {
                 b_hist_calc = false;
             }
+
+            // ヒストグラム作成をユーザーに確認した
+            hist_ask = true;
         }
 
         FindClose( sr );
