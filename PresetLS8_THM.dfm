@@ -32,14 +32,14 @@ object PresetFormLS8_THM: TPresetFormLS8_THM
     FocusControl = BandComboBox
   end
   object Label2: TLabel
-    Left = 220
+    Left = 212
     Top = 216
     Width = 13
     Height = 12
     Caption = 'K2'
   end
   object Label3: TLabel
-    Left = 120
+    Left = 112
     Top = 216
     Width = 13
     Height = 12
@@ -367,14 +367,14 @@ object PresetFormLS8_THM: TPresetFormLS8_THM
     Caption = #12496#12531#12489#12398#31278#39006
   end
   object Label7: TLabel
-    Left = 120
+    Left = 112
     Top = 188
     Width = 15
     Height = 12
     Caption = 'ML'
   end
   object Label8: TLabel
-    Left = 220
+    Left = 212
     Top = 188
     Width = 14
     Height = 12
@@ -433,17 +433,17 @@ object PresetFormLS8_THM: TPresetFormLS8_THM
     TabOrder = 0
   end
   object k2Edit: TEdit
-    Left = 240
+    Left = 232
     Top = 212
-    Width = 53
+    Width = 61
     Height = 20
     TabOrder = 6
     Text = '0'
   end
   object k1Edit: TEdit
-    Left = 140
+    Left = 132
     Top = 212
-    Width = 53
+    Width = 61
     Height = 20
     TabOrder = 5
     Text = '0'
@@ -509,17 +509,17 @@ object PresetFormLS8_THM: TPresetFormLS8_THM
     OnClick = TypeRadioButton11Click
   end
   object MLEdit: TEdit
-    Left = 140
+    Left = 132
     Top = 184
-    Width = 53
+    Width = 61
     Height = 20
     TabOrder = 3
     Text = '0'
   end
   object ALEdit: TEdit
-    Left = 240
+    Left = 232
     Top = 184
-    Width = 53
+    Width = 61
     Height = 20
     TabOrder = 4
     Text = '0'
