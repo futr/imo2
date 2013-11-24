@@ -3115,7 +3115,7 @@ void __fastcall TSatViewMainForm::MI_C_LS_THMClick(TObject *Sender)
     PresetFormLS_THM->BandComboBox->ItemIndex = 0;
 
     // LMAXとLMINが読み込めれば設定、読み込めなければデフォルト値
-    if ( b_config_land ) {
+    if ( b_config_land && b_config_ls7 ) {
     	PresetFormLS_THM->lmax_61 = land_lmax;
         PresetFormLS_THM->lmin_61 = land_lmin;
 
