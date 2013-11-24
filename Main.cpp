@@ -2101,11 +2101,7 @@ void __fastcall TSatViewMainForm::MaxBtnClick(TObject *Sender)
     box = (struct REMOS_FRONT_BAND *)( ( (TBitBtn *)Sender )->Parent->Tag );
 
     /* 最大最小に */
-    box->band->range_bottom = box->band->range_min;
-    box->band->range_top    = box->band->range_max;
-
-    /* 更新 */
-    UpdateBandBox( box );
+    disableBandRange( box );
 
     DrawImg();
 }
@@ -3090,7 +3086,6 @@ void __fastcall TSatViewMainForm::MI_C_TMClick(TObject *Sender)
 	PresetFormTHM->Show();
 }
 //---------------------------------------------------------------------------
-
 void __fastcall TSatViewMainForm::MI_C_LS_THMClick(TObject *Sender)
 {
 	/* LANDSAT_THMプリセットを表示 */
@@ -4054,11 +4049,6 @@ void __fastcall TSatViewMainForm::MI_C_GDEMClick(TObject *Sender)
 	PresetFormAGDEM->Show();
 }
 //---------------------------------------------------------------------------
-
-
-
-
-
 void __fastcall TSatViewMainForm::TBCurposClick(TObject *Sender)
 {
 	/* ピクセル情報表示 */
@@ -4066,6 +4056,15 @@ void __fastcall TSatViewMainForm::TBCurposClick(TObject *Sender)
 		PixForm->Show();
         PixForm->Caption = "座標値 ( 最新 )";
     }
+}
+//---------------------------------------------------------------------------
+void __fastcall TSatViewMainForm::disableBandRange( struct REMOS_FRONT_BAND *box )
+{
+	/* 指定バンドボックスのレンジ指定を解除 */
+    box->band->range_bottom = box->band->range_min;
+    box->band->range_top    = box->band->range_max;
+
+    UpdateBandBox( box );
 }
 //---------------------------------------------------------------------------
 

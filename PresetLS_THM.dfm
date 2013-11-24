@@ -2,7 +2,7 @@ object PresetFormLS_THM: TPresetFormLS_THM
   Left = 560
   Top = 274
   BorderStyle = bsDialog
-  Caption = 'LANDSAT'#28201#24230#20998#24067
+  Caption = 'LANDSAT7'#28201#24230#20998#24067
   ClientHeight = 287
   ClientWidth = 319
   Color = clBtnFace
@@ -20,9 +20,9 @@ object PresetFormLS_THM: TPresetFormLS_THM
   object TitleLabel: TLabel
     Left = 12
     Top = 8
-    Width = 100
+    Width = 106
     Height = 12
-    Caption = 'LANDSAT'#28201#24230#20998#24067
+    Caption = 'LANDSAT7'#28201#24230#20998#24067
   end
   object Label1: TLabel
     Left = 32

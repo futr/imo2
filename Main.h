@@ -414,6 +414,9 @@ public:
     /* メッセージ */
     void __fastcall AppMessage( tagMSG &msg, bool &handled );
 
+    /* 指定バンドボックスのレンジ設定解除 */
+    void __fastcall disableBandRange( struct REMOS_FRONT_BAND *box );
+
     /* バンドコンテナ */
     struct REMOS_FRONT_BAND *MakeBandBox( struct REMOS_BAND *band, AnsiString fln, int index );	/* バンドボックス作成 */
     void FreeBandBox( struct REMOS_FRONT_BAND *box );											/* バンドボックス開放 */

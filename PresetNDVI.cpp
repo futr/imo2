@@ -74,13 +74,8 @@ void __fastcall TPresetFormNDVI::BtnOkClick(TObject *Sender)
     SatViewMainForm->LevelDrawRadioButton->Checked = true;
 
     /* ƒqƒXƒgƒOƒ‰ƒ€Ý’è‰ðœ */
-    ( (struct REMOS_FRONT_BAND *)SatViewMainForm->list_band->Items[RedComboBox->ItemIndex] )->updown_bottom->Position = 0;
-    ( (struct REMOS_FRONT_BAND *)SatViewMainForm->list_band->Items[RedComboBox->ItemIndex] )->updown_top->Position = 255;
-    ( (struct REMOS_FRONT_BAND *)SatViewMainForm->list_band->Items[NIRComboBox->ItemIndex] )->updown_bottom->Position = 0;
-    ( (struct REMOS_FRONT_BAND *)SatViewMainForm->list_band->Items[NIRComboBox->ItemIndex] )->updown_top->Position = 255;
-
-    SatViewMainForm->UpdateBandBox( (struct REMOS_FRONT_BAND *)SatViewMainForm->list_band->Items[RedComboBox->ItemIndex] );
-    SatViewMainForm->UpdateBandBox( (struct REMOS_FRONT_BAND *)SatViewMainForm->list_band->Items[NIRComboBox->ItemIndex] );
+    SatViewMainForm->disableBandRange( (struct REMOS_FRONT_BAND *)SatViewMainForm->list_band->Items[RedComboBox->ItemIndex] );
+    SatViewMainForm->disableBandRange( (struct REMOS_FRONT_BAND *)SatViewMainForm->list_band->Items[NIRComboBox->ItemIndex] );
 
     /* Œ©‚¦‚È‚­‚È‚é */
     this->Visible = false;
