@@ -724,7 +724,7 @@ int remos_make_hist( struct REMOS_BAND *band )
 		
 		for ( j = 0; j < band->line_img_width; j++ ) {
 			/* 値に変換 */
-			val = remos_data_to_value_band( band, buf + band->bits / 8 * j );
+			val = remos_data_to_value_band( band, buf + ( band->byte_per_sample * band->sample_per_pix ) * j );
 			
 			/* ヒストグラム上での位置を確定 */
 			pos = ( val - band->range_min ) / ( band->range_max - band->range_min ) * 255;
