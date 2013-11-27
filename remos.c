@@ -700,6 +700,8 @@ int remos_make_hist( struct REMOS_BAND *band )
 	int i, j;
 	int lines;
 	int pos;
+	int pixels;
+	int skip;
 	float val;
 	unsigned int max;
 	unsigned char *buf;
@@ -717,12 +719,15 @@ int remos_make_hist( struct REMOS_BAND *band )
 	/* バッファ確保 */
 	buf = malloc( band->line_img_width * band->byte_per_sample * band->sample_per_pix );
 	
-	/* 計測 */
-	for ( i = 0; i < lines; i++ ) {
+	/* 4個ごと、4ラインごとに計測 */
+	skip   = 4;
+	pixels = 0;
+	
+	for ( i = 0; i < lines; i += skip ) {
 		/* 1ライン取得 */
 		remos_get_line_pixels( band, buf, i, 0, band->line_img_width );
 		
-		for ( j = 0; j < band->line_img_width; j++ ) {
+		for ( j = 0; j < band->line_img_width; j += skip ) {
 			/* 値に変換 */
 			val = remos_data_to_value_band( band, buf + ( band->byte_per_sample * band->sample_per_pix ) * j );
 			
@@ -731,8 +736,14 @@ int remos_make_hist( struct REMOS_BAND *band )
 			
 			/* ヒストグラム追加 */
 			band->hist[pos]++;
+			
+			/* 画素数 */
+			pixels++;
 		}
 	}
+	
+	/* ヒストグラム計算に使った画素数保存 */
+	band->hist_pixels = pixels;
 	
 	/* 最大値計測 */
 	for ( i = 0; i < 256; i++ ) {
@@ -769,7 +780,7 @@ void remos_calc_auto_range( struct REMOS_BAND *band, double per, int topbottom )
 	int start, end;
 	
 	/* 個数決定 */
-	skip  = band->line_count * band->line_img_width * per;
+	skip  = band->hist_pixels * per;
 	count = 0;
 	
 	/* topbottomが0以外で上下を指定分のぞく */

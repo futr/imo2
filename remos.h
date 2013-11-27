@@ -85,6 +85,7 @@ struct REMOS_BAND {											/* バンド情報構造体 */
 	unsigned int hist[256];									/* ヒストグラム */
 	int hist_max;											/* ヒストグラム最大値 ( ヒストグラム内位置0-255 ) */
 	int hist_max_reduce_topbottom;							/* 0と255を除いたヒストグラム最大値 ( ヒストグラム内位置0-255 ) */
+	int hist_pixels;										/* ヒストグラム計算時に数えたピクセル数 */
 
 	float range_top;										/* レンジ上 ( 実際の値 ) */
 	float range_bottom;										/* レンジ下 ( 実際の値 ) */
