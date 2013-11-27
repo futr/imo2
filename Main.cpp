@@ -508,7 +508,7 @@ void __fastcall TSatViewMainForm::DrawImg( TImage *screen, Graphics::TBitmap *ba
     screen->Canvas->Font->Color  = clRed;
     screen->Canvas->Brush->Color = clWhite;
     screen->Canvas->TextOutA( sc_w / 2 - screen->Canvas->TextWidth( str ) / 2, sc_h / 2 - screen->Canvas->TextHeight( str ) - 10, str );
-    Application->ProcessMessages();
+    // Application->ProcessMessages();
 
     /* À•WŒvZ */
 
@@ -739,6 +739,7 @@ void __fastcall TSatViewMainForm::DrawImg( TImage *screen, Graphics::TBitmap *ba
     	back_screen->Canvas->CopyRect( Rect( 0, 0, screen->Width, screen->Height ), screen->Canvas, Rect( 0, 0, screen->Width, screen->Height ) );
 	}
 
+    // •`‰æI—¹
     b_drawing = false;
 }
 //---------------------------------------------------------------------------
