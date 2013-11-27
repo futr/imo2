@@ -14,7 +14,6 @@
 class TPresetFormLS8_THM : public TForm
 {
 __published:	// IDE 管理のコンポーネント
-	TLabel *TitleLabel;
 	TLabel *Label1;
 	TLabel *Label2;
 	TLabel *Label3;
@@ -30,7 +29,6 @@ __published:	// IDE 管理のコンポーネント
 	TLabel *Label6;
 	TButton *BtnOk;
 	TButton *BtnCancel;
-	TMemo *DetailMemo;
 	TComboBox *BandComboBox;
 	TEdit *k2Edit;
 	TEdit *k1Edit;

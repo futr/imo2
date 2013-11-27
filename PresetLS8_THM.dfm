@@ -1,10 +1,10 @@
 object PresetFormLS8_THM: TPresetFormLS8_THM
-  Left = 559
-  Top = 590
+  Left = 892
+  Top = 589
   BorderStyle = bsDialog
   Caption = 'LANDSAT8'#28201#24230#20998#24067
-  ClientHeight = 306
-  ClientWidth = 320
+  ClientHeight = 179
+  ClientWidth = 283
   Color = clBtnFace
   Font.Charset = SHIFTJIS_CHARSET
   Font.Color = clWindowText
@@ -16,38 +16,31 @@ object PresetFormLS8_THM: TPresetFormLS8_THM
   OnShow = FormShow
   PixelsPerInch = 96
   TextHeight = 12
-  object TitleLabel: TLabel
+  object Label1: TLabel
     Left = 12
     Top = 8
-    Width = 106
-    Height = 12
-    Caption = 'LANDSAT8'#28201#24230#20998#24067
-  end
-  object Label1: TLabel
-    Left = 32
-    Top = 136
     Width = 46
     Height = 12
     Caption = #12496#12531#12489'(&B)'
     FocusControl = BandComboBox
   end
   object Label2: TLabel
-    Left = 212
-    Top = 216
+    Left = 192
+    Top = 88
     Width = 13
     Height = 12
     Caption = 'K2'
   end
   object Label3: TLabel
-    Left = 112
-    Top = 216
+    Left = 96
+    Top = 88
     Width = 13
     Height = 12
     Caption = 'K1'
   end
   object Image1: TImage
-    Left = 32
-    Top = 280
+    Left = 16
+    Top = 152
     Width = 256
     Height = 10
     AutoSize = True
@@ -298,91 +291,91 @@ object PresetFormLS8_THM: TPresetFormLS8_THM
     Visible = False
   end
   object LabelRed: TLabel
-    Left = 24
-    Top = 264
+    Left = 8
+    Top = 136
     Width = 12
     Height = 12
     Caption = '50'
     Visible = False
   end
   object Label4: TLabel
-    Left = 172
-    Top = 244
+    Left = 148
+    Top = 116
     Width = 68
     Height = 12
     Caption = #26368#39640#28201#24230'['#8451']'
   end
   object LabelYellow: TLabel
-    Left = 76
-    Top = 264
+    Left = 60
+    Top = 136
     Width = 12
     Height = 12
     Caption = '40'
     Visible = False
   end
   object LabelGreen: TLabel
-    Left = 128
-    Top = 264
+    Left = 112
+    Top = 136
     Width = 12
     Height = 12
     Caption = '30'
     Visible = False
   end
   object LabelWater: TLabel
-    Left = 180
-    Top = 264
+    Left = 164
+    Top = 136
     Width = 12
     Height = 12
     Caption = '20'
     Visible = False
   end
   object LabelBlue: TLabel
-    Left = 232
-    Top = 264
+    Left = 216
+    Top = 136
     Width = 12
     Height = 12
     Caption = '10'
     Visible = False
   end
   object LabelBlack: TLabel
-    Left = 284
-    Top = 264
+    Left = 268
+    Top = 136
     Width = 6
     Height = 12
     Caption = '0'
     Visible = False
   end
   object Label5: TLabel
-    Left = 24
-    Top = 244
+    Left = 8
+    Top = 116
     Width = 68
     Height = 12
     Caption = #26368#20302#28201#24230'['#8451']'
   end
   object Label6: TLabel
-    Left = 12
-    Top = 164
-    Width = 66
+    Left = 36
+    Top = 36
+    Width = 24
     Height = 12
-    Caption = #12496#12531#12489#12398#31278#39006
+    Caption = #31278#39006
   end
   object Label7: TLabel
-    Left = 112
-    Top = 188
+    Left = 96
+    Top = 60
     Width = 15
     Height = 12
     Caption = 'ML'
   end
   object Label8: TLabel
-    Left = 212
-    Top = 188
+    Left = 192
+    Top = 60
     Width = 14
     Height = 12
     Caption = 'AL'
   end
   object BtnOk: TButton
-    Left = 152
-    Top = 272
+    Left = 120
+    Top = 144
     Width = 75
     Height = 27
     Caption = #23455#34892'(&E)'
@@ -391,39 +384,17 @@ object PresetFormLS8_THM: TPresetFormLS8_THM
     OnClick = BtnOkClick
   end
   object BtnCancel: TButton
-    Left = 232
-    Top = 272
+    Left = 200
+    Top = 144
     Width = 75
     Height = 27
     Caption = #38281#12376#12427
     TabOrder = 10
     OnClick = BtnCancelClick
   end
-  object DetailMemo: TMemo
-    Left = 16
-    Top = 28
-    Width = 297
-    Height = 101
-    TabStop = False
-    BevelInner = bvNone
-    BevelOuter = bvNone
-    BorderStyle = bsNone
-    Color = cl3DLight
-    Lines.Strings = (
-      #12402#12392#12388#12398#12496#12531#12489#12434'Landsat8'#12398#12496#12531#12489'10'#12414#12383#12399'11'#12392#12415#12394#12375#12289#28201
-      #24230#20998#24067#12434#20316#25104#12375#12414#12377#12290
-      ''
-      #20197#19979#12398#12402#12392#12388#12398#12496#12531#12489#12392#12289#12496#12531#12489#12398#31278#39006#12434#36984#25246#12375#12289
-      'ML,AL,K1,K2'#12364#27491#12375#12356#20516#12395#35373#23450#12373#12428#12390#12356#12394#12369#12428#12400#30452#25509#35373#23450
-      #12375#12390#12367#12384#12373#12356#12290
-      #12496#12531#12489'v, w, x, y, z'#12399#20869#37096#12391#35336#31639#29992#12395#20351#29992#12375#12390#12356#12427#12398#12391#36984#25246
-      #12375#12394#12356#12391#12367#12384#12373#12356#12290)
-    ReadOnly = True
-    TabOrder = 11
-  end
   object BandComboBox: TComboBox
-    Left = 84
-    Top = 132
+    Left = 64
+    Top = 4
     Width = 209
     Height = 20
     Style = csDropDownList
@@ -433,64 +404,64 @@ object PresetFormLS8_THM: TPresetFormLS8_THM
     TabOrder = 0
   end
   object k2Edit: TEdit
-    Left = 232
-    Top = 212
+    Left = 212
+    Top = 84
     Width = 61
     Height = 20
     TabOrder = 6
     Text = '0'
   end
   object k1Edit: TEdit
-    Left = 132
-    Top = 212
+    Left = 116
+    Top = 84
     Width = 61
     Height = 20
     TabOrder = 5
     Text = '0'
   end
   object MaxTempEdit: TEdit
-    Left = 244
-    Top = 240
+    Left = 220
+    Top = 112
     Width = 37
     Height = 20
     TabOrder = 8
     Text = '45'
   end
   object TempUpDown: TUpDown
-    Left = 281
-    Top = 240
+    Left = 257
+    Top = 112
     Width = 15
     Height = 20
     Associate = MaxTempEdit
     Min = -255
     Max = 255
     Position = 45
-    TabOrder = 12
+    TabOrder = 11
     Wrap = False
   end
   object MinTempEdit: TEdit
-    Left = 96
-    Top = 240
+    Left = 80
+    Top = 112
     Width = 37
     Height = 20
     TabOrder = 7
     Text = '0'
   end
   object TempMinUpDown: TUpDown
-    Left = 133
-    Top = 240
+    Left = 117
+    Top = 112
     Width = 15
     Height = 20
     Associate = MinTempEdit
     Min = -255
     Max = 255
     Position = 0
-    TabOrder = 13
+    TabOrder = 12
     Wrap = False
   end
   object TypeRadioButton10: TRadioButton
-    Left = 108
-    Top = 160
+    Left = 92
+    Top = 32
     Width = 85
     Height = 17
     Caption = #12496#12531#12489'10(&1)'
@@ -500,8 +471,8 @@ object PresetFormLS8_THM: TPresetFormLS8_THM
     OnClick = TypeRadioButton10Click
   end
   object TypeRadioButton11: TRadioButton
-    Left = 208
-    Top = 160
+    Left = 188
+    Top = 32
     Width = 85
     Height = 17
     Caption = #12496#12531#12489'11(&2)'
@@ -509,16 +480,16 @@ object PresetFormLS8_THM: TPresetFormLS8_THM
     OnClick = TypeRadioButton11Click
   end
   object MLEdit: TEdit
-    Left = 132
-    Top = 184
+    Left = 116
+    Top = 56
     Width = 61
     Height = 20
     TabOrder = 3
     Text = '0'
   end
   object ALEdit: TEdit
-    Left = 232
-    Top = 184
+    Left = 212
+    Top = 56
     Width = 61
     Height = 20
     TabOrder = 4
