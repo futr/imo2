@@ -3,6 +3,7 @@
 *.obj
 *.tds
 *.cgl
+*.str
 
 # Windows exe
 *.exe
