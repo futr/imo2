@@ -26,7 +26,7 @@ bool GeotiffRec::open( char *filename )
 	}
 	
 	// tifrecèâä˙âª
-	if ( tifrec_open( &m_tifrec, filename ) ) {
+	if ( tifrec_open( &m_tifrec, filename ) == TIFREC_RES_SUCCEED ) {
 		m_open = true;
 	} else {
 		m_open = false;
