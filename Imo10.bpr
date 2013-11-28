@@ -88,7 +88,7 @@
 IncludeVerInfo=1
 AutoIncBuild=1
 MajorVer=1
-MinorVer=32
+MinorVer=33
 Release=0
 Build=0
 Debug=0
@@ -102,7 +102,7 @@ CodePage=932
 [Version Info Keys]
 CompanyName=
 FileDescription=
-FileVersion=1.32.0.0
+FileVersion=1.33.0.0
 InternalName=
 LegalCopyright=Masato Takahashi
 LegalTrademarks=

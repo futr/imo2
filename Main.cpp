@@ -3521,6 +3521,9 @@ void __fastcall TSatViewMainForm::OpenFiles( void )
     /* メッセージを消す */
     StatusForm->Close();
 
+    // カレントディレクトリ変更
+	SetCurrentDirectory( ExtractFileDir( OpenDialog->Files->Strings[OpenDialog->Files->Count - 1] ).c_str() );
+
     /* 設定ファイルの読み込みを試みる ( 面倒くさいので毎回する ) */
     if ( b_new_open ) {
     	// 設定読み込み開始
