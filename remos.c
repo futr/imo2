@@ -144,7 +144,7 @@ int remos_read_file( struct REMOS_FILE_CONTAINER *cont )
     int bits;
     int set_sample;
     int sample_format;
-	
+
 	switch ( cont->type ) {
 		case REMOS_FILE_TYPE_BSQ_ALOS_PAL_11:								/* ALOSのBSQだけどPALの1.1だった */
 			/* コンテナを設定 */
@@ -175,7 +175,7 @@ int remos_read_file( struct REMOS_FILE_CONTAINER *cont )
 				cont->bands[i].band_count  = 2;
 
 				cont->bands[i].color         = REMOS_BAND_COLOR_PACKED_USINT_2;
-				cont->bands[i].sample_format = REMOS_BAND_SAMPLE_FORMAT_UINT;
+				cont->bands[i].sample_format = REMOS_BAND_SAMPLE_FORMAT_IEEEFP;
 				cont->bands[i].endian        = REMOS_ENDIAN_BIG;
 				
 				cont->bands[i].fp          = cont->fp;
@@ -834,7 +834,6 @@ float remos_get_pixel( struct REMOS_BAND *band, int pos )
 
 	/* カラータイプによって位置が違う */
 	if ( band->color == REMOS_BAND_COLOR_BW ) {
-    	// DEBUG 修正
 		file_pos = ( ( band->band_count * line + band->band_num ) * band->line_width * band->byte_per_sample ) + band->line_header + ( pos % band->line_img_width ) * band->byte_per_sample + band->header;
 	} else if ( band->color == REMOS_BAND_COLOR_RGB ) {
 		file_pos = ( ( line + band->band_num ) * band->line_img_width * 3 * band->byte_per_sample ) + band->line_header + ( ( pos % band->line_img_width ) * 3 * band->byte_per_sample ) + band->header;
@@ -1038,13 +1037,8 @@ unsigned int remos_data_to_value( unsigned char *data, int len, int endian )
 float remos_data_to_value_band( struct REMOS_BAND *band, unsigned char *data )
 {
 	/* バンドのルールでデーターを取り出してfloatに変換 */
-
-    /* ALOSのPALSAR1.1はパックドだからget_line_pixelsで無理やり詰めなおしてるのでBytePerSampleなどの値を上書きする ( 今は負数なども取れるようにしてあるので改造の余地があるかも？ ) */
-    if ( band->color == REMOS_BAND_COLOR_PACKED_USINT_2 ) {
-        return remos_data_to_value_format( data, 1, REMOS_ENDIAN_LITTLE, REMOS_BAND_SAMPLE_FORMAT_UINT );
-    } else {
-    	return remos_data_to_value_format( data, band->byte_per_sample, band->endian, band->sample_format );
-}   }
+    return remos_data_to_value_format( data, band->byte_per_sample, band->endian, band->sample_format );
+}
 
 void remos_get_pixels( struct REMOS_FILE_CONTAINER *cont, int pos, struct REMOS_PIXELS *pixs )
 {
@@ -1100,7 +1094,7 @@ int remos_get_line_pixels( struct REMOS_BAND *band, unsigned char *buf, int line
 	/* カラータイプにより位置を特定 */
 	if ( band->color == REMOS_BAND_COLOR_BW ) {
     	// DEBUG 修正
-		file_pos = ( ( band->band_count * line + band->band_num ) * band->line_width * band->byte_per_sample ) + band->line_header + from * band->byte_per_sample + band->header;
+		file_pos = ( ( band->band_count * line + band->band_num ) * band->line_width ) + band->line_header + from * band->byte_per_sample + band->header;
 	} else if ( band->color == REMOS_BAND_COLOR_RGB ) {
 		file_pos = ( ( line + band->band_num ) * band->line_img_width * 3 * band->byte_per_sample ) + band->line_header + from * 3 * band->byte_per_sample + band->header;
 	} else if ( band->color == REMOS_BAND_COLOR_PACKED_USINT_2 ) {
@@ -1117,31 +1111,17 @@ int remos_get_line_pixels( struct REMOS_BAND *band, unsigned char *buf, int line
         /* DEBUG : 16bit対応方法を変更 */
 		switch ( band->bits ) {
 			case 16: {
-				/* バッファ確保 */
-				// read_buf = malloc( band->byte_per_sample * count );
-
-				/* 読み込み */
-				// fread( read_buf, 1, band->byte_per_sample * count, band->fp );
-
-				/* 詰め込み */
-				for ( i = 0; i < count; i++ ) {
-					// buf[i] = remos_data_to_value( read_buf + i * band->byte_per_sample, band->byte_per_sample, REMOS_ENDIAN_BIG ) / 65535.0 * 255.0;
-				}
-
-				// free( read_buf );
-
                 fread( buf, 1, count * 2, band->fp );
-
 				break;
 			}
 
 			case 8: {
 				fread( buf, 1, count, band->fp );
-
 				break;
 			}
 			
 			default: {
+                fread( buf, 1, count * band->byte_per_sample * band->sample_per_pix, band->fp );
 				break;
 			}
 		}
@@ -1171,8 +1151,7 @@ int remos_get_line_pixels( struct REMOS_BAND *band, unsigned char *buf, int line
 		
 		/* つめなおし */
 		for ( i = 0; i < count; i++ ) {
-			read_data_float = remos_data_to_float( read_buf + i * band->byte_per_sample * band->sample_per_pix + band->band_num * band->byte_per_sample, band->byte_per_sample, REMOS_ENDIAN_BIG );
-			buf[i] = fabs( read_data_float ) / 1000000 * 255.0;
+        	memcpy( buf + i * band->byte_per_sample, read_buf + i * band->byte_per_sample * band->sample_per_pix + band->band_num * band->byte_per_sample, band->byte_per_sample );
 		}
 		
 		/* 開放 */

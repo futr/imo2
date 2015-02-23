@@ -47,7 +47,7 @@ enum remos_endian {
 enum remos_band_color {
 	REMOS_BAND_COLOR_BW,
 	REMOS_BAND_COLOR_RGB,
-	REMOS_BAND_COLOR_PACKED_USINT_2							/* PAL1.1用 ( 無理やり ) */
+	REMOS_BAND_COLOR_PACKED_USINT_2							/* PAL1.1用 ( 無理やり -> PACKED_IEEEFPにすべき? ) */
 };
 
 enum remos_band_sample_format {								/* サンプル方法 ( tiffのタグの値を参考 ) */

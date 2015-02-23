@@ -20,7 +20,7 @@ object AboutForm: TAboutForm
     Top = 12
     Width = 85
     Height = 12
-    Caption = 'SatelliteEye 1.33'
+    Caption = 'SatelliteEye 1.34'
   end
   object Label2: TLabel
     Left = 84
