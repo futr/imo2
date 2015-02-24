@@ -101,10 +101,10 @@ int remos_check_file_type( struct REMOS_FILE_CONTAINER *cont )
 		memcpy( str_buf, buf + 52, 4 );
 		str_buf[4] = '\0';
 		
-		if ( !strcmp( str_buf, "PSRC" ) ) {
+		if ( !strcmp( str_buf, "PSRC" ) || !strncmp( str_buf, "SAR", 3 ) ) {
 			/* PALSAR1.5だった */
 			return REMOS_FILE_TYPE_BSQ_ALOS_PAL;
-		} else if ( !strcmp( str_buf, "PSRB" ) ) { 
+		} else if ( !strcmp( str_buf, "PSRB" ) ) {
 			/* PALSAR1.1だった */
 			return REMOS_FILE_TYPE_BSQ_ALOS_PAL_11;
 		} else {
@@ -511,15 +511,15 @@ int remos_read_file( struct REMOS_FILE_CONTAINER *cont )
 				cont->bands[i].header = header;
 				
 				cont->bands[i].line_img_width = width;
-				cont->bands[i].line_width = width;
+				cont->bands[i].line_width = width * cont->bands[i].byte_per_sample * cont->bands[i].sample_per_pix;
 				
 				cont->bands[i].line_count = height;
 			}
 			
 			/* コンテナに画像サイズを設定 */
 			cont->img_height = cont->bands[0].line_count;
-			cont->img_width  = cont->bands[0].line_width - cont->bands[0].line_header - cont->bands[0].line_footer;
-			
+			cont->img_width  = cont->bands[0].line_img_width;
+
 			return REMOS_RET_SUCCEED;
 		
 		default:															/* 何も処理できなかった */
@@ -805,7 +805,7 @@ void remos_calc_auto_range( struct REMOS_BAND *band, double per, int topbottom )
 		/* 超えた？ */
 		if ( count > skip ) {
 			band->range_top = ( 255 - i ) / 255.0 * ( band->range_max - band->range_min ) + band->range_min;;
-			
+
 			break;
 		}
 	}
@@ -834,7 +834,7 @@ float remos_get_pixel( struct REMOS_BAND *band, int pos )
 
 	/* カラータイプによって位置が違う */
 	if ( band->color == REMOS_BAND_COLOR_BW ) {
-		file_pos = ( ( band->band_count * line + band->band_num ) * band->line_width * band->byte_per_sample ) + band->line_header + ( pos % band->line_img_width ) * band->byte_per_sample + band->header;
+		file_pos = ( ( band->band_count * line + band->band_num ) * band->line_width ) + band->line_header + ( pos % band->line_img_width ) * band->byte_per_sample + band->header;
 	} else if ( band->color == REMOS_BAND_COLOR_RGB ) {
 		file_pos = ( ( line + band->band_num ) * band->line_img_width * 3 * band->byte_per_sample ) + band->line_header + ( ( pos % band->line_img_width ) * 3 * band->byte_per_sample ) + band->header;
 	} else if ( band->color == REMOS_BAND_COLOR_PACKED_USINT_2 ) {
@@ -869,7 +869,7 @@ float remos_data_to_float( unsigned char *data, int len, int endian )
 	/* エンディアンに従ってデータをfloatに */
 	int i;
 	float ret;
-	
+
 	ret = 0;
 
 	if ( endian == REMOS_ENDIAN_BIG ) {
@@ -959,7 +959,7 @@ float remos_data_to_value_format( unsigned char *data, int len, int endian, int 
 			ret_ptr[i] = data[i];
 		}
 	}
-	
+
 	/* 値をfloatに変換する */
 	switch ( format ) {
 		case REMOS_BAND_SAMPLE_FORMAT_INT:
@@ -975,7 +975,7 @@ float remos_data_to_value_format( unsigned char *data, int len, int endian, int 
 					ret = ret_c;
 					break;
 			}
-			
+
 			break;
 
 		case REMOS_BAND_SAMPLE_FORMAT_UINT:
@@ -991,7 +991,7 @@ float remos_data_to_value_format( unsigned char *data, int len, int endian, int 
 					ret = ret_uc;
 					break;
 			}
-			
+
 			break;
 
 		case REMOS_BAND_SAMPLE_FORMAT_IEEEFP:
@@ -1001,14 +1001,14 @@ float remos_data_to_value_format( unsigned char *data, int len, int endian, int 
 					ret = ret_f;
 					break;
 			}
-			
+
 			break;
-		
+
 		default:
 			ret = ret_i;
 			break;
 	}
-	
+
 	/* 返す */
 	return ret;
 }
@@ -1018,9 +1018,9 @@ unsigned int remos_data_to_value( unsigned char *data, int len, int endian )
 	/* エンディアンに従ってデータを数値に */
 	int i;
 	unsigned int ret;
-	
+
 	ret = 0;
-	
+
 	if ( endian == REMOS_ENDIAN_BIG ) {
 		for ( i = 0; i < len; i++ ) {
         	ret += data[i] * pow( 256, len - i - 1 );
@@ -1030,7 +1030,7 @@ unsigned int remos_data_to_value( unsigned char *data, int len, int endian )
 			ret += data[i] * pow( 256, i );
 		}
 	}
-	
+
 	return ret;
 }
 
@@ -1044,7 +1044,7 @@ void remos_get_pixels( struct REMOS_FILE_CONTAINER *cont, int pos, struct REMOS_
 {
 	/* ファイルコンテナ内の全バンドの指定一のデータを一括でもらう */
 	int i;
-	
+
 	/* 各バンドそれぞれ読み込み */
 	for ( i = 0; i < pixs->count; i++ ) {
 		pixs->pixels[i] = remos_get_pixel( &cont->bands[i], pos );

@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <string>
 
 namespace remos {
 
@@ -15,6 +16,9 @@ public:
 	double getLon( double i, double j );
 	double getI( double lat, double lon );
 	double getJ( double lat, double lon );
+    bool hasTime();
+    std::string getCenterTime();
+    std::string getReadableCenterTime();
 
 private:
 	double phi[10];
@@ -22,6 +26,7 @@ private:
 	double I[10];
 	double J[10];
 
+    std::string timeStr;
 };
 
 }; // end of namespace remos

@@ -472,6 +472,11 @@ void __fastcall TSatViewMainForm::DrawImg( TImage *screen, Graphics::TBitmap *ba
 
     b_drawing = true;
 
+    // カーソル砂時計
+    //TCursor cursor = screen->Cursor;
+    //screen->Cursor = crHourGlass;
+    //Application->ProcessMessages();
+
     /* 変数ポインタ登録 */
     for ( i = 0; i < ECALC_VAR_COUNT; i++ ) {
     	vars[i] = &var[i];
@@ -738,6 +743,10 @@ void __fastcall TSatViewMainForm::DrawImg( TImage *screen, Graphics::TBitmap *ba
     if ( back_screen != NULL ) {
     	back_screen->Canvas->CopyRect( Rect( 0, 0, screen->Width, screen->Height ), screen->Canvas, Rect( 0, 0, screen->Width, screen->Height ) );
 	}
+
+    // カーソル復元
+    //screen->Cursor = cursor;
+    //Application->ProcessMessages();
 
     // 描画終了
     b_drawing = false;
@@ -1604,6 +1613,9 @@ void __fastcall TSatViewMainForm::SatImageMouseMove(TObject *Sender,
                 SatImage->Canvas->Brush->Color = (TColor)RGB( 255, 200, 200 );
                 SatImage->Canvas->TextOutA( sc_w / 2 - line_add_x + 5, sc_h / 2 + 5 + ( i + 2 ) * SatImage->Canvas->TextHeight( str ) - line_add_y, str );
             }
+
+            // 描画中
+            SatImage->Canvas->TextOutA( sc_w / 2 - line_add_x + 5, sc_h / 2 + 5 + ( list_band->Count + 1 + 2 ) * SatImage->Canvas->TextHeight( str ) - line_add_y, "描画中" );
         }
 
     } else {
@@ -1877,6 +1889,7 @@ void __fastcall TSatViewMainForm::ScrImgHorScroll(TObject *Sender,
         SatImage->Canvas->Font->Color = clRed;
         SatImage->Canvas->Brush->Color = (TColor)RGB( 255, 200, 200 );
         SatImage->Canvas->TextOutA( sc_w / 2 + 5, sc_h / 2 + 5, str );
+        SatImage->Canvas->TextOutA( sc_w / 2 + 5, sc_h / 2 + 5 + SatImage->Canvas->TextHeight( str ), "描画中" );
     }
 }
 //---------------------------------------------------------------------------
@@ -1943,6 +1956,7 @@ void __fastcall TSatViewMainForm::ScrImgVertScroll(TObject *Sender,
         SatImage->Canvas->Font->Color = clRed;
         SatImage->Canvas->Brush->Color = (TColor)RGB( 255, 200, 200 );
         SatImage->Canvas->TextOutA( sc_w / 2 + 5, sc_h / 2 + 5, str );
+        SatImage->Canvas->TextOutA( sc_w / 2 + 5, sc_h / 2 + 5 + SatImage->Canvas->TextHeight( str ), "描画中" );
     }
 }
 //---------------------------------------------------------------------------
@@ -2116,11 +2130,18 @@ void __fastcall TSatViewMainForm::AutoBtnClick(TObject *Sender)
 
     /* ヒストグラム生成済み？ */
     if ( !box->hist_maked ) {
-    	ret = Application->MessageBoxA( "ヒストグラムが作成されていません。作成しますか？", "確認", MB_YESNO | MB_ICONINFORMATION );
+    	ret = Application->MessageBoxA( "ヒストグラムが作成されていません。作成しますか？\n処理には数十秒かかる場合があります。", "確認", MB_YESNO | MB_ICONINFORMATION );
 
     	if ( ret == IDYES ) {
+        	// 処理中を表示
+            StatusForm->MessageLabel->Caption = "ヒストグラムを作成しています";
+    		StatusForm->Show();
+    		Application->ProcessMessages();
+
         	box->hist_maked = true;
         	remos_make_hist( box->band );
+
+            StatusForm->Close();
         }
     }
 
@@ -2223,6 +2244,10 @@ void __fastcall TSatViewMainForm::ZoomImageMouseMove(TObject *Sender,
     	                                SatImage->Width / 2 + SatImage->Width / 2 / zoom_mag,
     	                                SatImage->Height / 2 + SatImage->Height / 2 / zoom_mag ),
     	                            img_back->Canvas, Rect( 0, 0, SatImage->Width, SatImage->Height ) );
+        SatImage->Canvas->Font->Size = 9;
+        SatImage->Canvas->Font->Color = clRed;
+        SatImage->Canvas->Brush->Color = (TColor)RGB( 255, 200, 200 );
+        SatImage->Canvas->TextOutA( 10, 10, "描画中" );
     }
 
     /* ズーム位置保存 */
@@ -3584,11 +3609,34 @@ void __fastcall TSatViewMainForm::OpenFiles( void )
 
                         // レコードを閉じる
                         FindClose( sr_led );
+                    } else {
+                    	// 何らかの日本衛星のデータ
+                        conf_lt_lat = econf_as_double( econf_search( &ef, "Img_ImageSceneLeftTopLatitude" ) );
+                    	conf_lt_lon = econf_as_double( econf_search( &ef, "Img_ImageSceneLeftTopLongitude" ) );
+                        conf_rt_lat = econf_as_double( econf_search( &ef, "Img_ImageSceneRightTopLatitude" ) );
+                        conf_rt_lon = econf_as_double( econf_search( &ef, "Img_ImageSceneRightTopLongitude" ) );
+                        conf_lb_lat = econf_as_double( econf_search( &ef, "Img_ImageSceneLeftBottomLatitude" ) );
+                        conf_lb_lon = econf_as_double( econf_search( &ef, "Img_ImageSceneLeftBottomLongitude" ) );
+                        conf_rb_lat = econf_as_double( econf_search( &ef, "Img_ImageSceneRightBottomLatitude" ) );
+                        conf_rb_lon = econf_as_double( econf_search( &ef, "Img_ImageSceneRightBottomLongitude" ) );
+
+                        b_config = true;
+                        b_config_alos = false;
+                        b_config_land = false;
+                        b_config_latlon_utm_proj = false;
                     }
                 }
 
                 // 日付の設定
-                if ( econf_search( &ef, "Lbi_ObservationDate" ) ) {
+                if ( econf_search( &ef, "Img_SceneCenterDateTime" ) ) {
+                	b_config_date = true;
+
+                    config_date_str = econf_as_str( econf_search( &ef, "Img_SceneCenterDateTime" ) );
+                } else if ( b_config_alos && conf_alos.hasTime() ) {
+                	b_config_date = true;
+
+                    config_date_str = conf_alos.getReadableCenterTime().data();
+                } else if ( econf_search( &ef, "Lbi_ObservationDate" ) ) {
                 	b_config_date = true;
 
                     config_date_str = econf_as_str( econf_search( &ef, "Lbi_ObservationDate" ) );
@@ -3718,6 +3766,11 @@ void __fastcall TSatViewMainForm::OpenFiles( void )
                         	b_config_date = true;
 
                             config_date_str = econf_as_str( econf_search( &ef, "DATE_ACQUIRED" ) );
+
+                            // 時刻 SCENE_CENTER_TIME
+                            if ( econf_search( &ef, "SCENE_CENTER_TIME" ) ) {
+                            	config_date_str = config_date_str + " " + econf_as_str( econf_search( &ef, "SCENE_CENTER_TIME" ) );
+                            }
                         } else {
                         	b_config_date = false;
                         }
@@ -3842,7 +3895,7 @@ void TSatViewMainForm::setSettingStr( void )
         } else if ( b_config_alos ) {
         	SettingStrPanel->Caption = "だいち";
         } else {
-            SettingStrPanel->Caption = "不明(座標設定のみ有効)";
+            SettingStrPanel->Caption = "不明";
         }
 
         // UTMならutmを追加
@@ -3871,6 +3924,9 @@ void TSatViewMainForm::setSettingStr( void )
     	StatusBar->Panels->Items[3]->Text = "設定ファイル無効";
     }
     */
+
+    // ヒント設定
+    SettingStrPanel->Hint = SettingStrPanel->Caption;
 }
 //---------------------------------------------------------------------------
 void TSatViewMainForm::clearSetting( void )

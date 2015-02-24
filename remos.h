@@ -76,7 +76,7 @@ struct REMOS_BAND {											/* バンド情報構造体 */
 	int color;												/* バンドの色情報 */
 	int sample_format;										/* ピクセルのサンプル方法 */
 
-	int line_width;											/* ライン幅 */
+	int line_width;											/* ライン幅 ( バイト ) */
 	int line_count;											/* ライン数 */
 	int line_header;										/* ラインヘッダ */
 	int line_footer;										/* ラインフッター */

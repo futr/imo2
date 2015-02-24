@@ -18,7 +18,7 @@ bool AlosConfig::loadLeader( char *filename )
 	
 	// 先頭に移動
 	fseek( ifp, 0x284C, SEEK_SET );
-	
+
 	// 終端文字付加
 	buf[24] = '\0';
 	
@@ -57,11 +57,52 @@ bool AlosConfig::loadLeader( char *filename )
 		// 実数へ変換して格納
 		J[i] = strtod( buf, NULL );
 	}
-	
+
+    // シーン中心時刻を読み込む
+
+    // 先頭に移動
+	fseek( ifp, 4796, SEEK_SET );
+
+    // 20文字読み込み
+    fread( buf, 20, 1, ifp );
+
+    buf[20] = '\0';
+
+    // stringへ
+    timeStr = buf;
+
 	// 閉じる
 	fclose( ifp );
 	
 	return true;
+}
+
+bool AlosConfig::hasTime()
+{
+	if ( timeStr.length() == 0 || timeStr[0] == ' ' ) {
+    	return false;
+    }
+
+    return true;
+}
+
+std::string AlosConfig::getReadableCenterTime()
+{
+	std::string year, month, day, h, m, s;
+
+    year  = timeStr.substr( 0, 4 );
+    month = timeStr.substr( 4, 2 );
+    day   = timeStr.substr( 6, 2 );
+    h     = timeStr.substr( 8, 2 );
+    m     = timeStr.substr( 10, 2 );
+    s     = timeStr.substr( 12, 2 );
+
+	return year + "/" + month + "/" + day + " " + h + ":" + m + ":" + s;
+}
+
+std::string AlosConfig::getCenterTime()
+{
+	return timeStr;
 }
 
 double AlosConfig::getLat( double i, double j )

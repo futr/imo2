@@ -20,14 +20,14 @@ object AboutForm: TAboutForm
     Top = 12
     Width = 85
     Height = 12
-    Caption = 'SatelliteEye 1.34'
+    Caption = 'SatelliteEye 1.35'
   end
   object Label2: TLabel
     Left = 84
     Top = 32
     Width = 139
     Height = 12
-    Caption = '(c) 2013 Masato Takahashi'
+    Caption = '(c) 2015 Masato Takahashi'
   end
   object Image1: TImage
     Left = 16

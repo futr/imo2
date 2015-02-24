@@ -32,22 +32,22 @@ struct ECONF_TOKEN *econf_recog_line( char *line )
 	struct ECONF_TOKEN *next;
 	char *text;
 	char *start;
-	
+
 	text = line;
 	top = malloc( sizeof(struct ECONF_TOKEN) );
-	
+
 	for ( next = top; next != NULL; next = next->next ) {
 		for ( ;; ) {
 			if ( *text == '=' ) {
 				/* 等号 */
 				next->type = ECONF_TOKEN_EQU;
 				next->str = malloc( 2 );
-				
+
 				next->str[0] = '=';
 				next->str[1] = '\0';
-				
+
 				text++;
-				
+
 				break;
 			} else if ( isspace( *text ) ) {
 				/* 空白は飛ばす */
@@ -57,29 +57,41 @@ struct ECONF_TOKEN *econf_recog_line( char *line )
 			} else if ( *text != '\0' ) {
 				/* 後は文字列とみなす */
 				start = text;
-				
+
 				next->type = ECONF_TOKEN_STR;
-				
+
 				/* 文字列切り出し */
-				do {
-					text++;
-				} while ( ( *text != '\0' ) && ( !isspace( *text ) ) && ( *text != '=' ) );
-				
+
+                /* もし"で始まるなら"まで */
+                if ( *start == '\"' ) {
+                	do {
+						text++;
+					} while ( ( *text != '\0' ) && ( *text != '\"' ) && ( *text != '=' ) );
+
+                    if ( *text == '\"' ) {
+                    	text++;
+                    }
+                } else {
+                	do {
+						text++;
+					} while ( ( *text != '\0' ) && ( !isspace( *text ) ) && ( *text != '=' ) );
+                }
+
 				next->str = malloc( text - start + 1 );
-				
+
 				memcpy( next->str, start, text - start );
 				next->str[text - start] = '\0';
-				
+
 				break;
 			} else {
 				/* \0等 ( エラー発生 ) */
 				next->type = ECONF_TOKEN_ERR;
 				next->str = NULL;
-				
+
 				break;
 			}
 		}
-		
+
 		/* エラー出なければ続く */
 		if ( next->type != ECONF_TOKEN_ERR ) {
 			next->next = malloc( sizeof(struct ECONF_TOKEN) );
@@ -87,7 +99,7 @@ struct ECONF_TOKEN *econf_recog_line( char *line )
 			next->next = NULL;
 		}
 	}
-	
+
 	/* 先頭を返す */
 	return top;
 }
