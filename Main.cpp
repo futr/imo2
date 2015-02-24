@@ -3579,8 +3579,9 @@ void __fastcall TSatViewMainForm::OpenFiles( void )
                 if ( econf_search( &ef, "Pds_ProductID" ) != NULL ) {
                 	AnsiString plevel = econf_as_str( econf_search( &ef, "Pds_ProductID" ) );
 
-                	if ( plevel.Pos( "O1B2R_U" ) != 0 || plevel.Pos( "O1B2G_U" ) != 0 ) {
+                	if ( plevel.Pos( "O1B2R_U" ) != 0 || plevel.Pos( "O1B2G_U" ) != 0 || plevel.Pos( "UBSR2.1GUD" ) != 0 ) {
 						// ALOS‚ÌUTM“Š‰e1B2‚¾‚Á‚½
+                        // ALOS2‚Ì2.1‚¾‚Á‚½
                         AnsiString fln_led;
                         TSearchRec sr_led;
 
@@ -3893,7 +3894,13 @@ void TSatViewMainForm::setSettingStr( void )
             	SettingStrPanel->Caption = SettingStrPanel->Caption + "8";
             }
         } else if ( b_config_alos ) {
-        	SettingStrPanel->Caption = "‚¾‚¢‚¿";
+        	if ( conf_alos.getType() == remos::AlosConfig::ALOS ) {
+        		SettingStrPanel->Caption = "‚¾‚¢‚¿";
+            } else if ( conf_alos.getType() == remos::AlosConfig::ALOS2 ) {
+            	SettingStrPanel->Caption = "‚¾‚¢‚¿2";
+            } else {
+            	SettingStrPanel->Caption = "‚¾‚¢‚¿?";
+            }
         } else {
             SettingStrPanel->Caption = "•s–¾";
         }

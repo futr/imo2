@@ -10,8 +10,14 @@ namespace remos {
 
 class AlosConfig {
 public:
+	enum Type {
+    	UNKNOWN,
+    	ALOS,
+        ALOS2,
+    };
+
 	bool loadLeader( char *filename );
-	
+
 	double getLat( double i, double j );
 	double getLon( double i, double j );
 	double getI( double lat, double lon );
@@ -19,12 +25,21 @@ public:
     bool hasTime();
     std::string getCenterTime();
     std::string getReadableCenterTime();
+    Type getType();
 
 private:
+	FILE *ifp;
+    Type type;
+
+    void readALOS();
+    void readALOS2();
+
 	double phi[10];
 	double lambda[10];
 	double I[10];
 	double J[10];
+    double A[8];
+    double B[8];
 
     std::string timeStr;
 };
