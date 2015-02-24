@@ -1012,24 +1012,32 @@ void __fastcall TSatViewMainForm::SatImageMouseUp(TObject *Sender,
 
         /* シンクロが必要ならシンクロする ( Syncでドローがかかるのでドローしない ) */
         if ( b_sync ) {
-            if ( b_config ) {
-            	/* 経度緯度可能 */
-                lon = 10000 * GetLon( ScrImgHor->Position, ScrImgVert->Position ).ToDouble();
-                lat = 10000 * GetLat( ScrImgHor->Position, ScrImgVert->Position ).ToDouble();
-
-                PostMessage( HWND_BROADCAST, umsg_lat, lat, 0 );
-                PostMessage( HWND_BROADCAST, umsg_lon, lon, 0 );
-            } else {
-            	/* XYモード */
-        		PostMessage( HWND_BROADCAST, umsg_x, ScrImgHor->Position, 0 );
-            	PostMessage( HWND_BROADCAST, umsg_y, ScrImgVert->Position, 0 );
-            }
-
-            PostMessage( HWND_BROADCAST, umsg_draw, ScrImgVert->Position, 0 );
+            syncPos();
         } else {
         	DrawImg();
         }
     }
+}
+//---------------------------------------------------------------------------
+void TSatViewMainForm::syncPos()
+{
+	// 位置を同期するメッセージを投げる
+    int lon, lat;
+
+    if ( b_config ) {
+    	/* 経度緯度可能 */
+    	lon = WPARAM_DIV * GetLon( ScrImgHor->Position, ScrImgVert->Position ).ToDouble();
+        lat = WPARAM_DIV * GetLat( ScrImgHor->Position, ScrImgVert->Position ).ToDouble();
+
+        PostMessage( HWND_BROADCAST, umsg_lat, lat, 0 );
+        PostMessage( HWND_BROADCAST, umsg_lon, lon, 0 );
+    } else {
+        	/* XYモード */
+    	PostMessage( HWND_BROADCAST, umsg_x, ScrImgHor->Position, 0 );
+        PostMessage( HWND_BROADCAST, umsg_y, ScrImgVert->Position, 0 );
+    }
+
+    PostMessage( HWND_BROADCAST, umsg_draw, ScrImgVert->Position, 0 );
 }
 //---------------------------------------------------------------------------
 void __fastcall TSatViewMainForm::BandCloseBtnClick(TObject *Sender)
@@ -1431,7 +1439,7 @@ AnsiString TSatViewMainForm::GetLon( int x, int y )
         }
     }
 
-    ret = ret.sprintf( "%.4lf", lon );
+    ret = ret.sprintf( "%.8lf", lon );
 
     return ret;
 }
@@ -1458,7 +1466,7 @@ AnsiString TSatViewMainForm::GetLat( int x, int y )
         }
     }
 
-    ret = ret.sprintf( "%.4lf", lat );
+    ret = ret.sprintf( "%.8lf", lat );
 
     return ret;
 }
@@ -1850,8 +1858,7 @@ void __fastcall TSatViewMainForm::ScrImgHorScroll(TObject *Sender,
 	if ( ScrollCode == scEndScroll || ScrCheckBox->Checked == true ) {
         /* シンクロが必要ならシンクロする ( Syncでドローがかかるのでドローしない ) */
         if ( b_sync ) {
-        	PostMessage( HWND_BROADCAST, umsg_x, ScrImgHor->Position, 0 );
-            PostMessage( HWND_BROADCAST, umsg_draw, ScrImgVert->Position, 0 );
+        	syncPos();
         } else {
         	DrawImg();
         }
@@ -1917,8 +1924,7 @@ void __fastcall TSatViewMainForm::ScrImgVertScroll(TObject *Sender,
 	if ( ScrollCode == scEndScroll || ScrCheckBox->Checked == true ) {
         /* シンクロが必要ならシンクロする ( Syncでドローがかかるのでドローしない ) */
         if ( b_sync ) {
-        	PostMessage( HWND_BROADCAST, umsg_y, ScrImgVert->Position, 0 );
-            PostMessage( HWND_BROADCAST, umsg_draw, ScrImgVert->Position, 0 );
+        	syncPos();
         } else {
         	DrawImg();
         }
@@ -3219,23 +3225,33 @@ void __fastcall TSatViewMainForm::AppMessage( tagMSG &msg, bool &handled )
         if ( msg.message == umsg_x ) {
             msg_buf_x = msg.wParam;
             msg_buf_mode = 0;
+
+            handled = true;
             // DrawImg();
         } else if ( msg.message == umsg_y ) {
             msg_buf_y = msg.wParam;
             msg_buf_mode = 0;
+
+            handled = true;
             // DrawImg();
         } else if ( msg.message == umsg_mag ) {
             zoom_pos = msg.wParam;
             DrawZoomBox( 0, 0 );
             DrawImg();
+
+            handled = true;
         } else if ( msg.message == umsg_lat ) {
             /* 緯度 経度では描画せず */
             msg_buf_mode = 1;
-            msg_buf_lat = msg.wParam / 10000.0;
+            msg_buf_lat = msg.wParam / WPARAM_DIV;
+
+            handled = true;
         } else if ( msg.message == umsg_lon ) {
             /* 経度 */
             msg_buf_mode = 1;
-            msg_buf_lon = msg.wParam / 10000.0;
+            msg_buf_lon = msg.wParam / WPARAM_DIV;
+
+            handled = true;
         } else if ( msg.message == umsg_draw ) {
             /* 描画指令 */
             /* DEBUG : 条件がおかしかった msg_buf_mode = 1 */
@@ -3273,6 +3289,8 @@ void __fastcall TSatViewMainForm::AppMessage( tagMSG &msg, bool &handled )
             ScrImgVert->Position = msg_buf_y;
 
             DrawImg();
+
+            handled = true;
         }
     }
 }

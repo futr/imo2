@@ -36,7 +36,7 @@ bool AlosConfig::loadLeader( char *filename )
     	readALOS();
     	break;
     case ALOS2:
-    	readALOS2();
+    	readALOS2Detail();
     	break;
     default:
     	break;
@@ -122,7 +122,7 @@ void AlosConfig::readALOS2()
 	int i;
 
 	// 経度緯度座標変換係数を読み込む
-    // 設備関連データレコード5 の2065-3064 バイトの係数の使用を推奨 らしいけど地図投影の方を使ってる
+    // 設備関連データレコード5 の2065-3064 バイトの係数の使用を推奨 らしいけど地図投影の方を使ってる 1885A4
 
 	// 先頭に移動
 	fseek( ifp, 6080, SEEK_SET );
@@ -147,6 +147,68 @@ void AlosConfig::readALOS2()
 		// 実数へ変換して格納
 		B[i] = strtod( buf, NULL );
 	}
+
+    // シーン中心時刻を読み込む
+
+    // 先頭に移動
+	fseek( ifp, 788, SEEK_SET );
+
+    // 20文字読み込み
+    fread( buf, 17, 1, ifp );
+
+    buf[17] = '\0';
+
+    // stringへ
+    timeStr = buf;
+}
+
+void AlosConfig::readALOS2Detail()
+{
+	char buf[128];
+	int i, j;
+
+	// 経度緯度座標変換係数を読み込む
+    // 設備関連データレコード5
+
+	// 先頭に移動
+	fseek( ifp, 0x1885A4, SEEK_SET );
+
+	// 終端文字付加
+	buf[20] = '\0';
+
+	// abまとめて
+    for ( i = 0; i < 2; i++ ) {
+        for ( j = 0; j < 25; j++ ) {
+            // 20文字読み込み
+            fread( buf, 20, 1, ifp );
+
+            // 実数へ変換して格納
+            mat[i][j] = strtod( buf, NULL );
+        }
+    }
+
+    // P0, L0
+    fread( buf, 20, 1, ifp );
+    P0 = strtod( buf, NULL );
+    fread( buf, 20, 1, ifp );
+    L0 = strtod( buf, NULL );
+
+	// cdまとめて
+    for ( i = 2; i < 4; i++ ) {
+        for ( j = 0; j < 25; j++ ) {
+            // 20文字読み込み
+            fread( buf, 20, 1, ifp );
+
+            // 実数へ変換して格納
+            mat[i][j] = strtod( buf, NULL );
+        }
+    }
+
+    // PHI0, LAMBDA0
+    fread( buf, 20, 1, ifp );
+    PHI0 = strtod( buf, NULL );
+    fread( buf, 20, 1, ifp );
+    LAMBDA0 = strtod( buf, NULL );
 
     // シーン中心時刻を読み込む
 
@@ -190,6 +252,41 @@ std::string AlosConfig::getCenterTime()
 	return timeStr;
 }
 
+double AlosConfig::calcPos( double *mat, double p, double l, double p0, double l0 )
+{
+	// ALOS2の設備5の行列のような計算
+    int i, j;
+    double ret;
+    double P, L;
+
+    P = p - p0;
+    L = l - l0;
+
+    ret = 0;
+
+    for ( i = 0; i < 5; i++ ) {
+    	for ( j = 0; j < 5; j++ ) {
+        	double pwrL, pwrP;
+
+            if ( ( L == 0 ) && ( 4 - j == 0 ) ) {
+            	pwrL = 1;
+            } else {
+           		pwrL = pow( L, 4 - j );
+            }
+
+            if ( ( P == 0 ) && ( 4 - i == 0 ) ) {
+            	pwrP = 1;
+            } else {
+           		pwrP = pow( P, 4 - i );
+            }
+
+        	ret += mat[i * 5 + j] * pwrL * pwrP;
+        }
+    }
+
+    return ret;
+}
+
 double AlosConfig::getLat( double i, double j )
 {
 	// 緯度取得
@@ -197,7 +294,8 @@ double AlosConfig::getLat( double i, double j )
     case ALOS:
 		return phi[0] + phi[1] * i + phi[2] * j + phi[3] * i * j + phi[4] * i * i + phi[5] * j * j + phi[6] * i * i * j + phi[7] * i * j * j + phi[8] * i * i * i + phi[9] * j * j * j;
     case ALOS2:
-    	return A[4] + A[5] * j + A[6] * j + A[7] * i * j;
+    	// return A[4] + A[5] * j + A[6] * j + A[7] * i * j;
+        return calcPos( mat[0], i, j, L0, P0 );
     default:
     	return 0;
     }
@@ -210,7 +308,8 @@ double AlosConfig::getLon( double i, double j )
     case ALOS:
 		return lambda[0] + lambda[1] * i + lambda[2] * j + lambda[3] * i * j + lambda[4] * i * i + lambda[5] * j * j + lambda[6] * i * i * j + lambda[7] * i * j * j + lambda[8] * i * i * i + lambda[9] * j * j * j;
     case ALOS2:
-    	return A[0] + A[1] * j + A[2] * i + A[3] * i * j;
+    	// return A[0] + A[1] * j + A[2] * i + A[3] * i * j;
+        return calcPos( mat[1], i, j, L0, P0 );
     default:
     	return 0;
     }
@@ -223,7 +322,8 @@ double AlosConfig::getI( double lat, double lon )
     case ALOS:
 		return I[0] + I[1] * lat + I[2] * lon + I[3] * lat * lon + I[4] * lat * lat + I[5] * lon * lon + I[6] * lat * lat * lon + I[7] * lat * lon * lon + I[8] * lat * lat * lat + I[9] * lon * lon * lon;
     case ALOS2:
-    	return B[4] + B[5] * lon + B[6] * lat + B[7] * lat * lon;
+    	// return B[4] + B[5] * lon + B[6] * lat + B[7] * lat * lon;
+        return calcPos( mat[2], lat, lon, PHI0, LAMBDA0 );
     default:
     	return 0;
     }
@@ -236,7 +336,8 @@ double AlosConfig::getJ( double lat, double lon )
     case ALOS:
 		return J[0] + J[1] * lat + J[2] * lon + J[3] * lat * lon + J[4] * lat * lat + J[5] * lon * lon + J[6] * lat * lat * lon + J[7] * lat * lon * lon + J[8] * lat * lat * lat + J[9] * lon * lon * lon;
     case ALOS2:
-        return B[0] + B[1] * lon + B[2] * lat + B[3] * lat * lon;
+        // return B[0] + B[1] * lon + B[2] * lat + B[3] * lat * lon;
+        return calcPos( mat[3], lat, lon, PHI0, LAMBDA0 );
     default:
     	return 0;
     }

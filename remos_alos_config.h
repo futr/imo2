@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <string>
+#include <math.h>
 
 namespace remos {
 
@@ -33,6 +34,9 @@ private:
 
     void readALOS();
     void readALOS2();
+    void readALOS2Detail();
+
+    double calcPos( double *mat, double p, double l, double p0, double l0 );
 
 	double phi[10];
 	double lambda[10];
@@ -40,6 +44,10 @@ private:
 	double J[10];
     double A[8];
     double B[8];
+
+    double mat[4][25];
+    double L0, P0;
+    double PHI0, LAMBDA0;
 
     std::string timeStr;
 };

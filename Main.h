@@ -25,6 +25,7 @@
 #include "CSPIN.h"
 //---------------------------------------------------------------------------
 #define ZOOM_MAX 10
+#define WPARAM_DIV 1000000.0
 //---------------------------------------------------------------------------
 struct REMOS_FRONT_BAND {					/* ビルダーでのバンドコンテナ */
 	TImage *img_hist;
@@ -335,8 +336,8 @@ public:
 
     int msg_buf_x;
     int msg_buf_y;
-    float msg_buf_lat;
-    float msg_buf_lon;
+    double msg_buf_lat;
+    double msg_buf_lon;
     int msg_buf_mode;				/* MODE0がXYモード */
 
     int cp_vert;
@@ -434,6 +435,8 @@ public:
     void GetLineData( struct REMOS_FRONT_BAND *box, unsigned char *buf, int line, int from, int count );
 
     unsigned char GetUCharValue( double value );
+
+    void syncPos();
 
     void __fastcall OpenFiles( void );
 
