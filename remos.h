@@ -39,6 +39,12 @@
 #define REMOS_RET_UNKNOWN			2						/* 開けはしたけど識別失敗 */
 #define REMOS_RET_READ_FAILED		3						/* なぜか読み込み失敗 */
 
+enum remos_band_mode{
+    REMOS_BAND_MODE_BIL,
+    REMOS_BAND_MODE_PACK,
+    REMOS_BAND_MODE_BSQ,
+};
+
 enum remos_endian {
 	REMOS_ENDIAN_BIG,
 	REMOS_ENDIAN_LITTLE
@@ -47,7 +53,7 @@ enum remos_endian {
 enum remos_band_color {
 	REMOS_BAND_COLOR_BW,
 	REMOS_BAND_COLOR_RGB,
-	REMOS_BAND_COLOR_PACKED_USINT_2							/* PAL1.1用 ( 無理やり -> PACKED_IEEEFPにすべき? ) */
+	REMOS_BAND_COLOR_PACKED_IEEEFP							/* PAL1.1用 */
 };
 
 enum remos_band_sample_format {								/* サンプル方法 ( tiffのタグの値を参考 ) */
@@ -56,11 +62,6 @@ enum remos_band_sample_format {								/* サンプル方法 ( tiffのタグの値を参考 ) 
 	REMOS_BAND_SAMPLE_FORMAT_IEEEFP,
 	REMOS_BAND_SAMPLE_FORMAT_COMPLEX_INT,
 	REMOS_BAND_SAMPLE_FORMAT_COMPLEX_IEEEFP,
-};
-
-struct REMOS_PIXELS {
-	unsigned int *pixels;									/* データ配列 */
-	int count;												/* データ数 */
 };
 
 struct REMOS_BAND {											/* バンド情報構造体 */
@@ -76,7 +77,7 @@ struct REMOS_BAND {											/* バンド情報構造体 */
 	int color;												/* バンドの色情報 */
 	int sample_format;										/* ピクセルのサンプル方法 */
 
-	int line_width;											/* ライン幅 ( バイト ) */
+	int line_width;											/* ライン幅 ( ヘッダ・フッタ含むバイト ) */
 	int line_count;											/* ライン数 */
 	int line_header;										/* ラインヘッダ */
 	int line_footer;										/* ラインフッター */
@@ -93,6 +94,8 @@ struct REMOS_BAND {											/* バンド情報構造体 */
 	float range_min;										/* レンジ最小値 ( 実際の値 ) */
 
 	int header;												/* 全ヘッダサイズ */
+
+    enum remos_band_mode band_mode;                         /* バンドデータの格納方法 */
 
 	FILE *fp;
 };
@@ -173,10 +176,8 @@ int remos_close( struct REMOS_FILE_CONTAINER *cont );														/* ファイルを
 int remos_set_type_BIL( struct REMOS_FILE_CONTAINER *cont, int file_header, int header, int footer, int lines, int width, int bands ,int bits );
 int remos_set_type_BSQ( struct REMOS_FILE_CONTAINER *cont, int file_header, int header, int footer, int lines, int width, int bits );
 
-float remos_get_pixel( struct REMOS_BAND *band, int pos );													/* 指定バンドの指定位置から1ピクセルもらう */
+float remos_get_pixel_value( struct REMOS_BAND *band, int pos );													/* 指定バンドの指定位置から1ピクセルもらう */
 int remos_get_line_pixels( struct REMOS_BAND *band, unsigned char *buf, int line, int from, int count );	/* 指定バンドの指定位置からcountピクセルをつめこむ  */
-void remos_get_pixels( struct REMOS_FILE_CONTAINER *cont, int pos, struct REMOS_PIXELS *pixs );				/* ファイルコンテナ内の全バンドの指定一のデータを一括でもらう */
-void remos_get_ranged_pixels( struct REMOS_BAND *band, unsigned char *buf, int count );						/* 指定バンドのダイナミックレンジに応じてレンジングする */
 float remos_get_ranged_pixel( struct REMOS_BAND *band, float val );											/* 指定バンドのレンジに応じて1バイト処理 */
 
 void remos_make_pixels( struct REMOS_FILE_CONTAINER *cont, struct REMOS_PIXELS *pixs );						/* PIXELS内の配列を自動確保 */
@@ -188,13 +189,8 @@ int remos_make_hist( struct REMOS_BAND *band );																/* ヒストグラム生
 void remos_calc_auto_range( struct REMOS_BAND *band, double per, int topbottom );							/* 自動でダイナミックレンジ設定 */
 void remos_set_range( struct REMOS_BAND *band, int bottom, int top );										/* ダイナミックレンジ(?)設定 */
 
-int remos_I2int( char *data, int length );																	/* I形式のテキストをintに alos等用 */
-unsigned int remos_BE2usint( char *data, int length );														/* ビッグエンディアンのデータを読む */
-
-float remos_data_to_value_band( struct REMOS_BAND *band, unsigned char *data );								/* バンドのルールに対応した方法でデーターを取り出す */
+float remos_data_to_value_band( struct REMOS_BAND *band, unsigned char *data, int index );  				/* バンドのルールに対応した方法でデーターを取り出す */
 float remos_data_to_value_format( unsigned char *data, int len, int endian, int format );					/* エンディアンと書式にしたがってデータを読み込む ( floatで返す ) */
-unsigned int remos_data_to_value( unsigned char *data, int len, int endian );								/* エンディアンに従ってデータを読む */
-float remos_data_to_float( unsigned char *data, int len, int endian );										/* エンディアンに従ってデータを読む ( float ) */
 
 struct REMOS_BAND *remos_get_band( struct REMOS_FILE_CONTAINER *cont, int num );							/* 指定したバンド番号のバンドを得る */
 

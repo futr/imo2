@@ -6,15 +6,8 @@
 #include "About.h"
 #include "PixValue.h"
 
-/* ヒストグラムの処理を大幅に書き換え中、どんなビット数でも256レベルに分解する */
-/* ヒストグラムの問題は修正したはず */
-/* Canvasモードのヒストグラム間違ってない？ */
 /* Canvasモードの排他処理が適当 */
 /* b_canvasで一応排他処理をしているが、一応なのでちゃんと作るときは書き換える */
-
-/* 場所値ダイアログでfloatとかusintとかをむちゃくちゃにしてしまった */
-/* remosに不完全なpal1.1が付いている */
-/* 場所値ダイアログで拡大モード時位置がおかしい、特に拡大して左に空白がある場合 */
 
 /* 描画関数のコピーが大量にあるのと、remosから値を取り出す方法が一致してない上に分散していること */
 /* 座標値取得のコードも分散していることなどの問題がある。 */
@@ -318,7 +311,6 @@ struct REMOS_FRONT_BAND *TSatViewMainForm::MakeBandBox( struct REMOS_BAND *band,
 
     box->label_name->Top = 8;
     box->label_name->Left = 28;
-    // box->label_name->Font->Color = clBlue;
     box->label_name->Caption = num;
     box->label_name->Caption = box->label_name->Caption + " : " + fln;;
 
@@ -472,11 +464,6 @@ void __fastcall TSatViewMainForm::DrawImg( TImage *screen, Graphics::TBitmap *ba
 
     b_drawing = true;
 
-    // カーソル砂時計
-    //TCursor cursor = screen->Cursor;
-    //screen->Cursor = crHourGlass;
-    //Application->ProcessMessages();
-
     /* 変数ポインタ登録 */
     for ( i = 0; i < ECALC_VAR_COUNT; i++ ) {
     	vars[i] = &var[i];
@@ -506,14 +493,6 @@ void __fastcall TSatViewMainForm::DrawImg( TImage *screen, Graphics::TBitmap *ba
 
     screen->Picture->Bitmap->PixelFormat = pf24bit;
     screen->Picture->Bitmap->HandleType = bmDIB;
-
-    /* 処理中 */
-    str = "描画中";
-    screen->Canvas->Font->Size   = 12;
-    screen->Canvas->Font->Color  = clRed;
-    screen->Canvas->Brush->Color = clWhite;
-    screen->Canvas->TextOutA( sc_w / 2 - screen->Canvas->TextWidth( str ) / 2, sc_h / 2 - screen->Canvas->TextHeight( str ) - 10, str );
-    // Application->ProcessMessages();
 
     /* 座標計算 */
 
@@ -620,7 +599,7 @@ void __fastcall TSatViewMainForm::DrawImg( TImage *screen, Graphics::TBitmap *ba
                         // キャンバスモード
                     	var[l] = remos_get_ranged_pixel( band->band, band->line_buf[k] );
                     } else {
-                        var[l] = remos_get_ranged_pixel( band->band, remos_data_to_value_band( band->band, band->line_buf + band->band->bits / 8 * k ) );
+                        var[l] = remos_get_ranged_pixel( band->band, remos_data_to_value_band( band->band, band->line_buf, k ) );
                     }
                 }
 
@@ -712,7 +691,7 @@ void __fastcall TSatViewMainForm::DrawImg( TImage *screen, Graphics::TBitmap *ba
                         // キャンバスモード
                     	var[l] = remos_get_ranged_pixel( band->band, band->line_buf[k * skip] );
                     } else {
-                        var[l] = remos_get_ranged_pixel( band->band, remos_data_to_value_band( band->band, band->line_buf + band->band->bits / 8 * k * skip ) );
+                        var[l] = remos_get_ranged_pixel( band->band, remos_data_to_value_band( band->band, band->line_buf, k * skip ) );
                     }
                 }
 
@@ -743,10 +722,6 @@ void __fastcall TSatViewMainForm::DrawImg( TImage *screen, Graphics::TBitmap *ba
     if ( back_screen != NULL ) {
     	back_screen->Canvas->CopyRect( Rect( 0, 0, screen->Width, screen->Height ), screen->Canvas, Rect( 0, 0, screen->Width, screen->Height ) );
 	}
-
-    // カーソル復元
-    //screen->Cursor = cursor;
-    //Application->ProcessMessages();
 
     // 描画終了
     b_drawing = false;
@@ -945,7 +920,7 @@ void __fastcall TSatViewMainForm::SatImageMouseDown(TObject *Sender,
             if ( box->canvas_mode ) {
                 val = GetPixel( box, img_w * cent_c_y + cent_c_x );
             } else {
-                val = remos_get_pixel( box->band, img_w * cent_c_y + cent_c_x );
+                val = remos_get_pixel_value( box->band, img_w * cent_c_y + cent_c_x );
             }
 
             band[0] = tolower( (char)( box->index + 0x41 ) );
@@ -1607,7 +1582,7 @@ void __fastcall TSatViewMainForm::SatImageMouseMove(TObject *Sender,
                 if ( box->canvas_mode ) {
                     val = GetPixel( box, img_w * vert + hor  );
                 } else {
-                    val = remos_get_pixel( box->band, img_w * vert + hor );
+                    val = remos_get_pixel_value( box->band, img_w * vert + hor );
                 }
 
                 band[0] = tolower( (char)( box->index + 0x41 ) );
@@ -1690,7 +1665,7 @@ void __fastcall TSatViewMainForm::SatImageMouseMove(TObject *Sender,
             	if ( box->canvas_mode ) {
               		val = GetPixel( box, img_w * cent_c_y + cent_c_x );
             	} else {
-            		val = remos_get_pixel( box->band, img_w * cent_c_y + cent_c_x );
+            		val = remos_get_pixel_value( box->band, img_w * cent_c_y + cent_c_x );
             	}
 
                 band[0] = tolower( (char)( box->index + 0x41 ) );
@@ -1738,7 +1713,7 @@ void __fastcall TSatViewMainForm::SatImageMouseMove(TObject *Sender,
             	if ( box->canvas_mode ) {
               		val = GetPixel( box, img_w * cent_c_y + cent_c_x );
             	} else {
-            		val = remos_get_pixel( box->band, img_w * cent_c_y + cent_c_x );
+            		val = remos_get_pixel_value( box->band, img_w * cent_c_y + cent_c_x );
             	}
 
             	// 式変数に登録
@@ -2414,7 +2389,6 @@ void __fastcall TSatViewMainForm::TBSideClick(TObject *Sender)
     Application->ProcessMessages();
 
     DrawImg();
-    // PleaseClick();
 }
 //---------------------------------------------------------------------------
 
@@ -2889,11 +2863,6 @@ void __fastcall TSatViewMainForm::TBScrClick(TObject *Sender)
     }
 }
 //---------------------------------------------------------------------------
-
-
-
-
-
 void __fastcall TSatViewMainForm::TBLtClick(TObject *Sender)
 {
 	MI_W_LTClick( Sender );
@@ -3281,9 +3250,6 @@ void __fastcall TSatViewMainForm::AppMessage( tagMSG &msg, bool &handled )
                     msg_buf_y = ScrImgVert->Position;
                 }
             }
-
-            // dbg = "x " + IntToStr( msg_buf_x ) + " y " + IntToStr( msg_buf_y );
-            // Application->MessageBoxA( dbg.c_str(), "", MB_OK );
 
             ScrImgHor->Position  = msg_buf_x;
             ScrImgVert->Position = msg_buf_y;
@@ -3935,20 +3901,6 @@ void TSatViewMainForm::setSettingStr( void )
     } else {
     	SettingStrPanel->Caption = "設定ファイル無効";
     }
-
-    /*
-    if ( b_config ) {
-        StatusBar->Panels->Items[3]->Text = "座標設定有効";
-
-        if ( b_config_land ) {
-            StatusBar->Panels->Items[3]->Text = "座標設定有効 LANDSAT温度設定有効";
-        }
-    } else if ( b_config_land ) {
-        StatusBar->Panels->Items[3]->Text = "LANDSAT温度設定有効";
-    } else {
-    	StatusBar->Panels->Items[3]->Text = "設定ファイル無効";
-    }
-    */
 
     // ヒント設定
     SettingStrPanel->Hint = SettingStrPanel->Caption;

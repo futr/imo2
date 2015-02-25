@@ -123,21 +123,21 @@ void ColorMap::setSmooth(bool smooth)
 }
 
 
-double ColorMap::getR()
+double ColorMap::getR() const
 {
     // 赤色取得
     return r;
 }
 
 
-double ColorMap::getG()
+double ColorMap::getG() const
 {
     // 緑色取得
     return g;
 }
 
 
-double ColorMap::getB()
+double ColorMap::getB() const
 {
     // 青色取得
     return b;
@@ -207,7 +207,7 @@ void ColorMap::sortLevel()
 }
 
 
-ColorLevel *ColorMap::getUnderColorLevel(double level)
+ColorLevel *ColorMap::getUnderColorLevel(double level) const
 {
     // valの下側の色レベルを返す
     ColorLevel *clevel;
@@ -234,7 +234,7 @@ ColorLevel *ColorMap::getUnderColorLevel(double level)
 }
 
 
-ColorLevel *ColorMap::getUpperColorLevel(double level)
+ColorLevel *ColorMap::getUpperColorLevel(double level) const
 {
     // valの上側の色レベルを返す
     ColorLevel *clevel;
@@ -295,14 +295,14 @@ void ColorMap::deleteColorLevel( int index )
 }
 
 
-int ColorMap::getColorLevelCount()
+int ColorMap::getColorLevelCount() const
 {
     // 総レベル数
     return levels->Count;
 }
 
 
-ColorLevel *ColorMap::getColorLevel(int index)
+ColorLevel *ColorMap::getColorLevel(int index) const
 {
     // 指定インデックスるのカラーレベルを取得
 
@@ -334,7 +334,7 @@ int __fastcall sortLevelFunction(void *item1, void *item2)
 }
 
 
-AnsiString ColorMap::getExpression()
+AnsiString ColorMap::getExpression() const
 {
     // 式文字を返す
     return exp;
@@ -348,14 +348,14 @@ void ColorMap::setUnitString(AnsiString unit)
 }
 
 
-AnsiString ColorMap::getUnitString()
+AnsiString ColorMap::getUnitString() const
 {
     // 単位文字列を取得
     return unit_str;
 }
 
 
-bool ColorMap::getSmooth()
+bool ColorMap::getSmooth() const
 {
     // なめらか設定取得
     return smooth;
@@ -369,14 +369,14 @@ void ColorMap::setValue(double value)
 }
 
 
-double ColorMap::getValue()
+double ColorMap::getValue() const
 {
     // 式値取得
     return value;
 }
 
 
-int ColorMap::getColorLevelIndex(ColorLevel *level)
+int ColorMap::getColorLevelIndex(ColorLevel *level) const
 {
     // カラーレベルポインターからインデックス取得
     return levels->IndexOf( level );

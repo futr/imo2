@@ -1,14 +1,15 @@
 #include "remos.h"
 
-/* !!!!PALSAT対応のためいじり中 2013 0607 */
-/* 特にfloat remos_data_to_value_band( struct REMOS_BAND *band, unsigned char *data )をいじってるけどまだ正しいか確認していない */
-
 /* 汎用衛星データリーダーライブラリ ver1.3 */
-/* 結局8bitにしか対応していない ( 無理やりPALSARの16bitだけは対応している ) */
 /* 簡易TIFFアクセス */
 /* 8bit非圧縮オンリー */
 /* GeoTiffのタグはわからない */
 /* bands 0, 1, 2の順でRGB */
+
+static int remos_I2int( char *data, int length );															/* I形式のテキストをintに alos等用 */
+static unsigned int remos_BE2usint( char *data, int length );												/* ビッグエンディアンのデータを読む */
+static unsigned int remos_data_to_value( unsigned char *data, int len, int endian );						/* エンディアンに従ってデータを読む */
+static float remos_data_to_float( unsigned char *data, int len, int endian );										/* エンディアンに従ってデータを読む ( float ) */
 
 int remos_open( struct REMOS_FILE_CONTAINER *cont, char *filename, int type )
 {
@@ -174,7 +175,7 @@ int remos_read_file( struct REMOS_FILE_CONTAINER *cont )
 			for ( i = 0; i < cont->band_count; i++ ) {
 				cont->bands[i].band_count  = 2;
 
-				cont->bands[i].color         = REMOS_BAND_COLOR_PACKED_USINT_2;
+				cont->bands[i].color         = REMOS_BAND_COLOR_PACKED_IEEEFP;
 				cont->bands[i].sample_format = REMOS_BAND_SAMPLE_FORMAT_IEEEFP;
 				cont->bands[i].endian        = REMOS_ENDIAN_BIG;
 				
@@ -197,6 +198,8 @@ int remos_read_file( struct REMOS_FILE_CONTAINER *cont )
 				cont->bands[i].range_bottom = 0;
 				cont->bands[i].range_max    = pow( 2, cont->bands->bits ) - 1;
 				cont->bands[i].range_min    = 0;
+
+                cont->bands[i].band_mode    = REMOS_BAND_MODE_PACK;
 			}
 
 			/* コンテナに画像サイズを設定 */
@@ -286,6 +289,8 @@ int remos_read_file( struct REMOS_FILE_CONTAINER *cont )
 			cont->bands->range_max    = pow( 2, cont->bands->bits ) - 1;
 			cont->bands->range_min    = 0;
 
+            cont->bands->band_mode    = REMOS_BAND_MODE_BSQ;
+
 			/* コンテナに画像サイズを設定 */
 			cont->img_height = cont->bands->line_count;
 			cont->img_width  = cont->bands->line_img_width;
@@ -337,6 +342,8 @@ int remos_read_file( struct REMOS_FILE_CONTAINER *cont )
 				cont->bands[i].range_bottom = 0;
 				cont->bands[i].range_max    = pow( 2, cont->bands[i].bits ) - 1;
 				cont->bands[i].range_min    = 0;
+
+                cont->bands[i].band_mode    = REMOS_BAND_MODE_BIL;
 			}
 			
 			/* バッファを解放 */
@@ -459,9 +466,9 @@ int remos_read_file( struct REMOS_FILE_CONTAINER *cont )
 			for ( i = 0; i < cont->band_count; i++ ) {
 				cont->bands[i].bits = bits;
 				cont->bands[i].byte_per_sample = cont->bands[i].bits / 8;
-				
-				/* カラーの場合でも展開しているのでピクセルあたりのサンプル数は1で固定 */
-				cont->bands[i].sample_per_pix  = 1;
+
+				/* サンプル数指定 */
+				cont->bands[i].sample_per_pix = sample;
 
 				/* このバンドが取りうる値の範囲を確定 */
 				if ( sample_format == REMOS_BAND_SAMPLE_FORMAT_UINT ) {
@@ -514,6 +521,9 @@ int remos_read_file( struct REMOS_FILE_CONTAINER *cont )
 				cont->bands[i].line_width = width * cont->bands[i].byte_per_sample * cont->bands[i].sample_per_pix;
 				
 				cont->bands[i].line_count = height;
+
+                // バンドモードは一応PACKを仮定
+                cont->bands[i].band_mode = REMOS_BAND_MODE_PACK;
 			}
 			
 			/* コンテナに画像サイズを設定 */
@@ -572,6 +582,8 @@ int remos_set_type_BIL( struct REMOS_FILE_CONTAINER *cont,
 		cont->bands[i].range_top    = pow( 2, bits ) - 1;
 		cont->bands[i].range_bottom = 0;
 		cont->bands[i].range_min    = 0;
+
+        cont->bands[i].band_mode    = REMOS_BAND_MODE_BIL;
 	}
 	
 	return REMOS_RET_SUCCEED;
@@ -618,11 +630,13 @@ int remos_set_type_BSQ( struct REMOS_FILE_CONTAINER *cont,
 	cont->bands->range_top    = pow( 2, bits ) - 1;
 	cont->bands->range_max    = pow( 2, bits ) - 1;
 	cont->bands->range_bottom = 0;
+
+    cont->bands->band_mode    = REMOS_BAND_MODE_BSQ;
 	
 	return REMOS_RET_SUCCEED;
 }
 
-int remos_I2int( char *data, int length )
+static int remos_I2int( char *data, int length )
 {
 	/* ただのstrto、lengthは正確じゃないと暴走？ */
 	char *buf;
@@ -640,7 +654,7 @@ int remos_I2int( char *data, int length )
 	return ret;										/* 変換して終了 */
 }
 
-unsigned int remos_BE2usint( char *data, int length )
+static unsigned int remos_BE2usint( char *data, int length )
 {
 	/* ビッグエンディアンのデータを読み込んでUSINTに */
 	unsigned char *buf;
@@ -678,22 +692,6 @@ unsigned int remos_BE2usint( char *data, int length )
 	return ret;
 }
 
-void remos_make_pixels( struct REMOS_FILE_CONTAINER *cont, struct REMOS_PIXELS *pixs )
-{
-	/* PIXELS内の配列を自動確保 */
-
-	pixs->pixels = malloc( sizeof(unsigned int) * cont->band_count );
-	pixs->count  = cont->band_count;
-}
-
-void remos_free_pixels( struct REMOS_PIXELS *pixs )
-{
-	/* 確保されたPIXELSを自動解放 */
-	
-	free( pixs->pixels );
-	pixs->pixels = NULL;
-}
-
 int remos_make_hist( struct REMOS_BAND *band )
 {
 	/* ヒストグラム生成 */
@@ -729,7 +727,7 @@ int remos_make_hist( struct REMOS_BAND *band )
 		
 		for ( j = 0; j < band->line_img_width; j += skip ) {
 			/* 値に変換 */
-			val = remos_data_to_value_band( band, buf + ( band->byte_per_sample * band->sample_per_pix ) * j );
+			val = remos_data_to_value_band( band, buf, j );
 			
 			/* ヒストグラム上での位置を確定 */
 			pos = ( val - band->range_min ) / ( band->range_max - band->range_min ) * 255;
@@ -784,24 +782,24 @@ void remos_calc_auto_range( struct REMOS_BAND *band, double per, int topbottom )
 	count = 0;
 	
 	/* topbottomが0以外で上下を指定分のぞく */
-	
+
 	/* 計測 */
 	for ( i = topbottom; i < 256; i++ ) {
 		count += band->hist[i];
-		
+
 		/* 超えた？ */
 		if ( count > skip ) {
 			band->range_bottom = i / 255.0 * ( band->range_max - band->range_min ) + band->range_min;
-			
+
 			break;
 		}
 	}
-	
+
 	count = 0;
-	
+
 	for ( i = topbottom; i < 256; i++ ) {
 		count += band->hist[255 - i];
-		
+
 		/* 超えた？ */
 		if ( count > skip ) {
 			band->range_top = ( 255 - i ) / 255.0 * ( band->range_max - band->range_min ) + band->range_min;;
@@ -811,12 +809,11 @@ void remos_calc_auto_range( struct REMOS_BAND *band, double per, int topbottom )
 	}
 }
 
-float remos_get_pixel( struct REMOS_BAND *band, int pos )
+float remos_get_pixel_value( struct REMOS_BAND *band, int pos )
 {
 	/* 指定バンドの指定位置から1ピクセルもらう */
 	int line;
 	int file_pos;
-	// unsigned int ret;
     float ret;
 	unsigned char *buf;
 
@@ -826,37 +823,10 @@ float remos_get_pixel( struct REMOS_BAND *band, int pos )
 	/* 位置を特定 */
 	line = pos / band->line_img_width;
 
-    /* 位置がおかしければ脱出 */
-    if ( pos < 0 || line >= band->line_count ) {
-    	ret = 0;
-        goto L_EXIT_GET_PIXEL;
-    }
+    // ライン読み込み
+    remos_get_line_pixels( band, buf, line, pos % band->line_img_width, 1 );
 
-	/* カラータイプによって位置が違う */
-	if ( band->color == REMOS_BAND_COLOR_BW ) {
-		file_pos = ( ( band->band_count * line + band->band_num ) * band->line_width ) + band->line_header + ( pos % band->line_img_width ) * band->byte_per_sample + band->header;
-	} else if ( band->color == REMOS_BAND_COLOR_RGB ) {
-		file_pos = ( ( line + band->band_num ) * band->line_img_width * 3 * band->byte_per_sample ) + band->line_header + ( ( pos % band->line_img_width ) * 3 * band->byte_per_sample ) + band->header;
-	} else if ( band->color == REMOS_BAND_COLOR_PACKED_USINT_2 ) {
-		/* 主にALOSPAL1.1用 */
-		file_pos = ( line * band->line_width ) + band->line_header + ( pos % band->line_img_width ) * band->byte_per_sample * band->sample_per_pix + band->band_num * band->byte_per_sample + band->header;
-	}
-
-	/* 読み込み */
-	fseek( band->fp, file_pos, SEEK_SET );
-	fread( buf, 1, band->byte_per_sample, band->fp );
-
-	/* データを数値に */
-	if ( band->color == REMOS_BAND_COLOR_PACKED_USINT_2 ) {
-		ret = remos_data_to_float( buf, band->byte_per_sample, REMOS_ENDIAN_BIG );
-	} else {
-    	// DEBUG : BIGからLITTLEに変更
-		// DEBUG : 使う関数を変更
-		ret = remos_data_to_value_band( band, buf );
-		// ret = remos_data_to_value( buf, band->byte_per_sample, REMOS_ENDIAN_LITTLE );
-	}
-
-L_EXIT_GET_PIXEL:
+    ret = remos_data_to_value_band( band, buf, 0 );
 
 	/* 開放 */
 	free( buf );
@@ -864,7 +834,7 @@ L_EXIT_GET_PIXEL:
 	return ret;
 }
 
-float remos_data_to_float( unsigned char *data, int len, int endian )
+static float remos_data_to_float( unsigned char *data, int len, int endian )
 {
 	/* エンディアンに従ってデータをfloatに */
 	int i;
@@ -1013,7 +983,7 @@ float remos_data_to_value_format( unsigned char *data, int len, int endian, int 
 	return ret;
 }
 
-unsigned int remos_data_to_value( unsigned char *data, int len, int endian )
+static unsigned int remos_data_to_value( unsigned char *data, int len, int endian )
 {
 	/* エンディアンに従ってデータを数値に */
 	int i;
@@ -1034,21 +1004,13 @@ unsigned int remos_data_to_value( unsigned char *data, int len, int endian )
 	return ret;
 }
 
-float remos_data_to_value_band( struct REMOS_BAND *band, unsigned char *data )
+float remos_data_to_value_band( struct REMOS_BAND *band, unsigned char *data, int index )
 {
+    /* 位置計算 バンドの値が連続して並んでることを想定している */
+    unsigned char *start = data + index * band->byte_per_sample;
+
 	/* バンドのルールでデーターを取り出してfloatに変換 */
-    return remos_data_to_value_format( data, band->byte_per_sample, band->endian, band->sample_format );
-}
-
-void remos_get_pixels( struct REMOS_FILE_CONTAINER *cont, int pos, struct REMOS_PIXELS *pixs )
-{
-	/* ファイルコンテナ内の全バンドの指定一のデータを一括でもらう */
-	int i;
-
-	/* 各バンドそれぞれ読み込み */
-	for ( i = 0; i < pixs->count; i++ ) {
-		pixs->pixels[i] = remos_get_pixel( &cont->bands[i], pos );
-	}
+    return remos_data_to_value_format( start, band->byte_per_sample, band->endian, band->sample_format );
 }
 
 void remos_set_range( struct REMOS_BAND *band, int bottom, int top )
@@ -1090,120 +1052,45 @@ int remos_get_line_pixels( struct REMOS_BAND *band, unsigned char *buf, int line
 
 	/* 位置を特定 */
 
+    // DEBUG BILかどうかで動作を切り分けなければならないはず
+    // 最近BILを扱っていないので正しく動作しなくなっている可能性がある
+    // BILかつPACKのがうまく扱えないという問題があるかも
 
-	/* カラータイプにより位置を特定 */
-	if ( band->color == REMOS_BAND_COLOR_BW ) {
-    	// DEBUG 修正
-		file_pos = ( ( band->band_count * line + band->band_num ) * band->line_width ) + band->line_header + from * band->byte_per_sample + band->header;
-	} else if ( band->color == REMOS_BAND_COLOR_RGB ) {
-		file_pos = ( ( line + band->band_num ) * band->line_img_width * 3 * band->byte_per_sample ) + band->line_header + from * 3 * band->byte_per_sample + band->header;
-	} else if ( band->color == REMOS_BAND_COLOR_PACKED_USINT_2 ) {
-		/* 主にALOSPAL1.1用 */
-		file_pos = ( line * band->line_width ) + band->line_header + from * band->byte_per_sample * band->sample_per_pix + band->header;
-	}
+    // バンドモードで処理を分岐
+    if ( band->band_mode == REMOS_BAND_MODE_BIL ) {
+        // BIL
+        file_pos = band->header + ( ( band->band_count * line + band->band_num ) * band->line_width ) + band->line_header + from * band->byte_per_sample * band->sample_per_pix;
+    } else {
+        // BSQ, PACK
+        file_pos = band->header + ( line * band->line_width ) + band->line_header + from * band->sample_per_pix * band->byte_per_sample;
+    }
 
 	/* 初期位置へ */
 	fseek( band->fp, file_pos, SEEK_SET );
 
-	/* カラータイプにより読み込み */
-	if ( band->color == REMOS_BAND_COLOR_BW ) {
-		/* DEBUG : 暫定的に16bit対応 */
-        /* DEBUG : 16bit対応方法を変更 */
-		switch ( band->bits ) {
-			case 16: {
-                fread( buf, 1, count * 2, band->fp );
-				break;
-			}
-
-			case 8: {
-				fread( buf, 1, count, band->fp );
-				break;
-			}
-			
-			default: {
-                fread( buf, 1, count * band->byte_per_sample * band->sample_per_pix, band->fp );
-				break;
-			}
-		}
-		
-	} else if ( band->color == REMOS_BAND_COLOR_RGB ) {
-		/* バッファ確保 */
-		read_buf = malloc( band->line_img_width * 3 * band->byte_per_sample );
-		
-		/* 読み込み */
-		fread( read_buf, 1, count * 3 * band->byte_per_sample, band->fp );
-		
-		/* 詰め込み */
-		for ( i = 0; i < count; i++ ) {
-			buf[i] = read_buf[i * 3 + band->band_num];
-		}
-		
-		/* 開放 */
-		free( read_buf );
-	} else if ( band->color == REMOS_BAND_COLOR_PACKED_USINT_2 ) {
-		/* 主にALOS-PAL1.1用 */
+    // バンドモードによって詰め込み
+    if ( band->band_mode == REMOS_BAND_MODE_BIL || band->band_mode == REMOS_BAND_MODE_BSQ || band->band_count == 1 ) {
+        // パックされていないBIL、BSQ、もしくはバンド数が1のもの
+        fread( buf, 1, count * band->byte_per_sample * band->sample_per_pix, band->fp );
+    } else {
+        // バンド数が1より多く、PACK
 
 		/* バッファ確保 */
 		read_buf = malloc( band->line_img_width * band->sample_per_pix * band->byte_per_sample );
-		
+
 		/* 読み込み */
 		fread( read_buf, 1, count * band->sample_per_pix * band->byte_per_sample, band->fp );
-		
-		/* つめなおし */
+
+		/* 詰め込み */
 		for ( i = 0; i < count; i++ ) {
-        	memcpy( buf + i * band->byte_per_sample, read_buf + i * band->byte_per_sample * band->sample_per_pix + band->band_num * band->byte_per_sample, band->byte_per_sample );
+            memcpy( buf + i * band->byte_per_sample, read_buf + i * band->byte_per_sample * band->sample_per_pix + band->band_num * band->byte_per_sample, band->byte_per_sample );
 		}
-		
+
 		/* 開放 */
 		free( read_buf );
-	}
-
-	return REMOS_RET_SUCCEED;
-}
-
-void remos_get_ranged_pixels( struct REMOS_BAND *band, unsigned char *buf, int count )
-{
-	/* 指定バンドのダイナミックレンジに応じて値を丸める */
-	int i;
-	int ret;
-
-	/* 今のところ8bitしか対応しないので8bit以外ではなにもしない */
-	if ( band->bits != 8 ) {
-		return;
-	}
-
-	/* unsigned int でしか使えない */
-	if ( band->sample_format != REMOS_BAND_SAMPLE_FORMAT_UINT ) {
-		return;
-	}
-	
-	/* 指定個数がオーバーしてれば強制的に収める */
-	if ( count > band->line_img_width ) {
-		count = band->line_img_width;
-	}
-	
-	/* 指定されてなければ計算しない */
-	if ( band->range_bottom == 0 && band->range_top == 255 ) {
-		return;
-	}
-
-    /* 幅が0ならなにもしない */
-    if ( ( band->range_top - band->range_bottom ) < 1 ) {
-    	return;
     }
 
-	/* 計算 */
-	for ( i = 0; i < count; i++ ) {
-		ret = ( buf[i] - band->range_bottom ) * ( 255.999999 / ( band->range_top - band->range_bottom ) );
-
-		if ( ret < 0 ) {
-			buf[i] = 0;
-		} else if ( ret > 255 ) {
-			buf[i] = 255;
-		} else {
-			buf[i] = ret;
-		}
-	}
+	return REMOS_RET_SUCCEED;
 }
 
 float remos_get_ranged_pixel( struct REMOS_BAND *band, float val )

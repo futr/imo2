@@ -240,7 +240,7 @@ bool __fastcall TSaveForm::SaveToBmp( AnsiString filename, int zpos )
                         // キャンバスモード
                     	var[l] = remos_get_ranged_pixel( band->band, band->line_buf[k] );
                     } else {
-                        var[l] = remos_get_ranged_pixel( band->band, remos_data_to_value_band( band->band, band->line_buf + band->band->bits / 8 * k ) );
+                        var[l] = remos_get_ranged_pixel( band->band, remos_data_to_value_band( band->band, band->line_buf, k ) );
                     }
                 }
 
@@ -341,7 +341,7 @@ bool __fastcall TSaveForm::SaveToBmp( AnsiString filename, int zpos )
                         // キャンバスモード
                     	var[l] = remos_get_ranged_pixel( band->band, band->line_buf[k * skip] );
                     } else {
-                        var[l] = remos_get_ranged_pixel( band->band, remos_data_to_value_band( band->band, band->line_buf + band->band->bits / 8 * k * skip ) );
+                        var[l] = remos_get_ranged_pixel( band->band, remos_data_to_value_band( band->band, band->line_buf, k * skip ) );
                     }
                 }
 

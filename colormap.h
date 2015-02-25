@@ -32,22 +32,22 @@ public:
     ColorMap &operator =( const ColorMap &r_cm );
 
 	void setExpression( AnsiString exp );
-    AnsiString getExpression( void );
+    AnsiString getExpression( void ) const;
     void evalExpression( double **args, double ans );
 
     void setValue( double value );
-    double getValue( void );
+    double getValue( void ) const;
 
     void setUnitString( AnsiString unit );
-    AnsiString getUnitString( void );
+    AnsiString getUnitString( void ) const;
 
     void setRange( double bottom, double top );
 	void setSmooth( bool smooth = true );
-    bool getSmooth( void );
+    bool getSmooth( void ) const;
 
-    double getR( void );
-    double getG( void );
-    double getB( void );
+    double getR( void ) const;
+    double getG( void ) const;
+    double getB( void ) const;
 
     void sortLevel( void );
     void makeColor( void );
@@ -55,9 +55,9 @@ public:
     void addColorLevel( ColorLevel *level );
     void deleteColorLevel( int index );
     void deleteAllColorLevel( void );
-    int getColorLevelCount( void );
-    int getColorLevelIndex( ColorLevel *level );
-    ColorLevel *getColorLevel( int index );
+    int getColorLevelCount( void ) const;
+    int getColorLevelIndex( ColorLevel *level ) const;
+    ColorLevel *getColorLevel( int index ) const;
 
     void setTopLevel( double level );
     void setBottomLevel( double level );
@@ -65,8 +65,8 @@ public:
 private:
     void setColor( int r, int g, int b );
 
-    ColorLevel *getUnderColorLevel( double level );
-    ColorLevel *getUpperColorLevel( double level );
+    ColorLevel *getUnderColorLevel( double level ) const;
+    ColorLevel *getUpperColorLevel( double level ) const;
 
 private:
     TList *levels;
