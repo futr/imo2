@@ -296,8 +296,6 @@ public:
     int img_w;						/* 画像はば */
     int img_h;						/* 画像高さ */
 
-    float mag;
-
     /* フラグ */
     bool b_open;					/* 開かれている */
     bool b_click;					/* クリックされた */
@@ -429,12 +427,13 @@ public:
     void FreeBandBox( struct REMOS_FRONT_BAND *box );											/* バンドボックス開放 */
     void UpdateBandBox( struct REMOS_FRONT_BAND *box );
     void DrawHist( REMOS_FRONT_BAND *box );
-
     void MakeHist( struct REMOS_FRONT_BAND *box );
     unsigned char GetPixel( struct REMOS_FRONT_BAND *box, int pos );
     void GetLineData( struct REMOS_FRONT_BAND *box, unsigned char *buf, int line, int from, int count );
-
     unsigned char GetUCharValue( double value );
+    void ReadBandLineBuf( struct REMOS_FRONT_BAND *band, int line, int pos, int count );
+    double ZoomPosToMag( int zoom_pos );
+    double GetBandPixel( struct REMOS_FRONT_BAND *band, int pos );
 
     void syncPos();
 
@@ -443,6 +442,7 @@ public:
     void __fastcall DisplayHint(TObject *Sender);
     void __fastcall PleaseClick( void );
     void __fastcall DrawZoomBox( int X, int Y );
+    void __fastcall DrawMiniMap( int vert, int hor );
 
     void __fastcall BandCloseBtnClick( TObject *Sender );
     void __fastcall ImageMouseWheelEvent( TObject *Sender, TShiftState Shift,

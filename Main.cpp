@@ -9,10 +9,6 @@
 /* Canvasモードの排他処理が適当 */
 /* b_canvasで一応排他処理をしているが、一応なのでちゃんと作るときは書き換える */
 
-/* 描画関数のコピーが大量にあるのと、remosから値を取り出す方法が一致してない上に分散していること */
-/* 座標値取得のコードも分散していることなどの問題がある。 */
-/* レンジの設定もほとんど機能していない */
-
 #include "Status.h"
 //---------------------------------------------------------------------------
 
@@ -37,11 +33,6 @@
 #pragma link "CSPIN"
 #pragma resource "*.dfm"
 TSatViewMainForm *SatViewMainForm;
-
-/* 画像起点 */
-int img_x_start = 0;
-int img_y_start = 0;
-
 //---------------------------------------------------------------------------
 __fastcall TSatViewMainForm::TSatViewMainForm(TComponent* Owner)
 	: TForm(Owner)
@@ -85,8 +76,6 @@ __fastcall TSatViewMainForm::TSatViewMainForm(TComponent* Owner)
 
     img_w = 1;
     img_h = 1;
-
-    mag = 1;
 
     zoom_pos = ZOOM_MAX / 2;
 
@@ -182,12 +171,6 @@ void __fastcall TSatViewMainForm::TBSaveClick(TObject *Sender)
 
 	/* 画像保存 ( 変に操作されると怖いのでModal ) */
     SaveForm->ShowModal();
-
-    /*
-    if ( SaveDialog->Execute() ) {
-    	SatImage->Picture->SaveToFile( SaveDialog->FileName );
-    }
-	*/
 }
 //---------------------------------------------------------------------------
 struct REMOS_FRONT_BAND *TSatViewMainForm::MakeBandBox( struct REMOS_BAND *band, AnsiString fln, int index )
@@ -408,34 +391,29 @@ void __fastcall TSatViewMainForm::DrawImg( TImage *screen, Graphics::TBitmap *ba
 {
 	/* 描画関数 */
     struct REMOS_FRONT_BAND *band;
-    unsigned char *line_buf;
     double var[ECALC_VAR_COUNT];
     double *vars[ECALC_VAR_COUNT];
-    AnsiString str;
 
     int i, j, k, l;
     int skip;
-    int xpos;
+    int blockSize;
     RGBTRIPLE *rgb;
     unsigned char red;
     unsigned char blue;
     unsigned char green;
-
     unsigned char *buf;
 
     double mag;	// グローバルとかぶっているの強制ローカル
 
     int sc_w;
     int sc_h;
-    int sc_x;
-    int sc_y;
 
     int img_start_x;
     int img_start_y;
     int img_read_xc;
     int img_read_yc;
-    int img_read_xw;
-    int img_read_yw;
+    int img_use_xc;
+    int img_use_yc;
 
     int draw_w;
     int draw_h;
@@ -443,26 +421,6 @@ void __fastcall TSatViewMainForm::DrawImg( TImage *screen, Graphics::TBitmap *ba
     int draw_y;
     double draw_x_b;
     double draw_y_b;
-
-    int bb_w;
-    int bb_h;
-
-    /* 開いてなければ実行しない */
-    if ( !b_open ) {
-    	return;
-    }
-
-    /* 描画中なら実行しない */
-    if ( b_drawing ) {
-    	return;
-    }
-
-    /* 描画許可がなければ描画しない */
-    if ( !b_draw ) {
-    	return;
-    }
-
-    b_drawing = true;
 
     /* 変数ポインタ登録 */
     for ( i = 0; i < ECALC_VAR_COUNT; i++ ) {
@@ -490,25 +448,24 @@ void __fastcall TSatViewMainForm::DrawImg( TImage *screen, Graphics::TBitmap *ba
     screen->Canvas->Brush->Color = clWhite;
     screen->Picture->Bitmap->Width = sc_w;
     screen->Picture->Bitmap->Height = sc_h;
-
     screen->Picture->Bitmap->PixelFormat = pf24bit;
     screen->Picture->Bitmap->HandleType = bmDIB;
 
+    /* キャンパスクリア */
+    screen->Canvas->Brush->Color = clWhite;
+    screen->Canvas->FillRect( Rect( 0, 0, sc_w, sc_h ) );
+
     /* 座標計算 */
 
-    /* 倍率設定 */
-    if ( zoompos > ZOOM_MAX / 2 ) {
-    	/* 縮小 */
-        mag  = 1.0 / Power( 2, zoompos - ZOOM_MAX / 2 );
-        skip = 1.0 / mag;
-    } else if ( zoompos < ZOOM_MAX / 2 ) {
-    	/* 拡大 */
-    	mag  = Power( 2, ZOOM_MAX / 2 - zoompos );
-        skip = mag;
-    } else {
-    	/* 等倍 */
-    	mag  = 1;
+    // 倍率取得とskip（読み込み飛ばし量）と画素ブロックサイズ決定
+    mag = ZoomPosToMag( zoompos );
+
+    if ( mag >= 1 ) {
         skip = 1;
+        blockSize = mag;
+    } else {
+        skip = 1 / mag;
+        blockSize = 1;
     }
 
     /* 実質描画空間設定 */
@@ -544,207 +501,153 @@ void __fastcall TSatViewMainForm::DrawImg( TImage *screen, Graphics::TBitmap *ba
         line_add_y = ( sc_h / 2 ) - ( img_cent_y - img_start_y ) * mag;
     }
 
-    /* キャンパスクリア */
-    screen->Canvas->Brush->Color = clWhite;
-    screen->Canvas->FillRect( Rect( 0, 0, sc_w, sc_h ) );
+	/* 読み込み個数（範囲）決定 */
+	img_read_xc = ( draw_w - draw_x ) / mag;
+	img_read_yc = ( draw_h - draw_y ) / mag;
 
-    /* 拡大か縮小化で描画方法変更 */
-    if ( mag >= 1 ) {
-    	/* 拡大 */
+    /* 範囲補正 */
+    if ( img_start_x + img_read_xc > img_w ) {
+        /* xの読み込み範囲がオーバー */
+        img_read_xc = img_w - img_start_x;
+    }
 
-    	/* 読み込み個数決定 */
-    	img_read_xc = ( draw_w - draw_x ) / skip;
-    	img_read_yc = ( draw_h - draw_y ) / skip;
+    if ( img_start_y + img_read_yc > img_h ) {
+        /* yの読み込み範囲がオーバー */
+        img_read_yc = img_h - img_start_y;
+    }
 
-        /* 範囲補正 */
-        if ( img_start_x + img_read_xc > img_w ) {
-            /* xの読み込み範囲がオーバー */
-            img_read_xc = img_w - img_start_x;
+    /* 実際に使われる個数 */
+    img_use_xc = img_read_xc / skip;
+    img_use_yc = img_read_yc / skip;
+
+    // 画面行バッファ作成 ( R, G, B )
+    buf = (unsigned char *)malloc( img_read_xc * 3 );
+
+    // 読み込みと描画ループ
+    for ( i = 0; i < img_use_yc; i++ ) {
+        /* 各バンド読み込み */
+        for ( j = 0; j < list_band->Count; j++ ) {
+            /* バンド指定、データ読み込み */
+            band = (struct REMOS_FRONT_BAND *)(list_band->Items[j]);
+
+            // バンドのラインバッファ読み込み
+            ReadBandLineBuf( band, img_start_y + i * skip, img_start_x, img_read_xc );
         }
 
-        if ( img_start_y + img_read_yc > img_h ) {
-            /* yの読み込み範囲がオーバー */
-            img_read_yc = img_h - img_start_y;
-        }
+        /* 列データ読み出しループ */
+        for ( k = 0; k < img_use_xc; k++ ) {
+            /* 色作成 */
+            for ( l = 0; l < list_band->Count; l++ ) {
+            	/* バンド取得 */
+                band = (struct REMOS_FRONT_BAND *)(list_band->Items[l]);
 
-        /* 画像バッファ作成 */
-        buf = (unsigned char *)malloc( img_read_xc * 3 );
-
-        /* 読み込み描画ループ */
-        for ( i = 0; i < img_read_yc; i++ ) {
-            /* 各バンド読み込み */
-            for ( j = 0; j < list_band->Count; j++ ) {
-                /* バンド指定、データ読み込み */
-                band = (struct REMOS_FRONT_BAND *)(list_band->Items[j]);
-
-                /* モードで方法が違う */
-                if ( !band->canvas_mode ) {
-                	remos_get_line_pixels( band->band, band->line_buf, img_start_y + i, img_start_x, img_read_xc );
+                /* 値登録 */
+                if ( band->canvas_mode ) {
+                    // キャンバスモード
+                	var[l] = remos_get_ranged_pixel( band->band, band->line_buf[k * skip] );
                 } else {
-                	GetLineData( band, band->line_buf, img_start_y + i, img_start_x, img_read_xc );
+                    var[l] = remos_get_ranged_pixel( band->band, remos_data_to_value_band( band->band, band->line_buf, k * skip ) );
                 }
             }
 
-            /* 画面に書き込み */
+            // 式モードかカラーバーモードか
+            if ( drawModeExp ) {
+            	// 式モード
+                red   = GetUCharValue( ecalc_get_tree_value( tok_r, vars, 0 ) );
+                green = GetUCharValue( ecalc_get_tree_value( tok_g, vars, 0 ) );
+                blue  = GetUCharValue( ecalc_get_tree_value( tok_b, vars, 0 ) );
+            } else {
+            	// カラーバーモード
+                cmap->evalExpression( vars, 0 );
+                cmap->makeColor();
 
-            /* 列データ読み出しループ */
-            for ( k = 0; k < img_read_xc; k++ ) {
-                /* 色作成 */
-                for ( l = 0; l < list_band->Count; l++ ) {
-                    /* バンド取得 */
-                    band = (struct REMOS_FRONT_BAND *)(list_band->Items[l]);
-
-                    /* 値登録 */
-                    if ( band->canvas_mode ) {
-                        // キャンバスモード
-                    	var[l] = remos_get_ranged_pixel( band->band, band->line_buf[k] );
-                    } else {
-                        var[l] = remos_get_ranged_pixel( band->band, remos_data_to_value_band( band->band, band->line_buf, k ) );
-                    }
-                }
-
-                // 式モードかカラーバーモードか
-                if ( drawModeExp ) {
-                	// 式モード
-                    red   = GetUCharValue( ecalc_get_tree_value( tok_r, vars, 0 ) );
-                    green = GetUCharValue( ecalc_get_tree_value( tok_g, vars, 0 ) );
-                    blue  = GetUCharValue( ecalc_get_tree_value( tok_b, vars, 0 ) );
-                } else {
-                	// カラーバーモード
-                    cmap->evalExpression( vars, 0 );
-                    cmap->makeColor();
-
-                    red   = GetUCharValue( cmap->getR() );
-                    green = GetUCharValue( cmap->getG() );
-                    blue  = GetUCharValue( cmap->getB() );
-                }
-
-                buf[k * 3 + 0] = red;
-                buf[k * 3 + 1] = green;
-                buf[k * 3 + 2] = blue;
+                red   = GetUCharValue( cmap->getR() );
+                green = GetUCharValue( cmap->getG() );
+                blue  = GetUCharValue( cmap->getB() );
             }
 
-            /* 行ループ */
-            for ( j = 0; j < skip; j++ ) {
-                /* 行ポインタ取得 */
-                rgb = (RGBTRIPLE *)screen->Picture->Bitmap->ScanLine[j + draw_y + i * skip];
-
-            	for ( k = 0; k < img_read_xc; k++ ) {
-                    for ( l = 0; l < skip; l++ ) {
-                        rgb[l + draw_x + k * skip].rgbtBlue  = buf[k * 3 + 2];
-                        rgb[l + draw_x + k * skip].rgbtRed   = buf[k * 3 + 0];
-                        rgb[l + draw_x + k * skip].rgbtGreen = buf[k * 3 + 1];
-                    }
-                }
-            }
+            // バッファに保存
+            buf[k * 3 + 0] = red;
+            buf[k * 3 + 1] = green;
+            buf[k * 3 + 2] = blue;
         }
 
-        /* バッファ開放 */
-        free( buf );
-    } else {
-    	/* 縮小 */
-
-    	/* 読み込み個数決定 */
-    	img_read_xc = draw_w - draw_x;
-    	img_read_yc = draw_h - draw_y;
-
-        /* 範囲補正 */
-        if ( img_start_x + img_read_xc * skip > img_w ) {
-            /* xの読み込み範囲がオーバー */
-            img_read_xc = ( img_w - img_start_x ) / skip;
-        }
-
-        if ( img_start_y + img_read_yc * skip > img_h ) {
-            /* yの読み込み範囲がオーバー */
-            img_read_yc = ( img_h - img_start_y ) / skip;
-        }
-
-        /* 読み込み描画ループ */
-        for ( i = 0; i < img_read_yc; i++ ) {
-            /* 各バンド読み込み */
-            for ( j = 0; j < list_band->Count; j++ ) {
-                /* バンド指定、データ読み込み */
-                band = (struct REMOS_FRONT_BAND *)(list_band->Items[j]);
-
-               /* モードで方法が違う */
-                if ( !band->canvas_mode ) {
-                	remos_get_line_pixels( band->band, band->line_buf, img_start_y + i * skip, img_start_x, img_read_xc * skip );
-                } else {
-                	GetLineData( band, band->line_buf, img_start_y + i * skip, img_start_x, img_read_xc * skip );
-                }
-            }
-
-            /* 画面に書き込み */
-
+        // 行blockSize分描画ループ
+        for ( j = 0; j < blockSize; j++ ) {
             /* 行ポインタ取得 */
-            rgb = (RGBTRIPLE *)screen->Picture->Bitmap->ScanLine[draw_y + i];
+            rgb = (RGBTRIPLE *)screen->Picture->Bitmap->ScanLine[j + draw_y + i * blockSize];
 
-            /* 列データ読み出しループ */
-            for ( k = 0; k < img_read_xc; k++ ) {
-                /* 色作成 */
-                for ( l = 0; l < list_band->Count; l++ ) {
-                	/* バンド取得 */
-                    band = (struct REMOS_FRONT_BAND *)(list_band->Items[l]);
-
-                    /* 値登録 */
-                    if ( band->canvas_mode ) {
-                        // キャンバスモード
-                    	var[l] = remos_get_ranged_pixel( band->band, band->line_buf[k * skip] );
-                    } else {
-                        var[l] = remos_get_ranged_pixel( band->band, remos_data_to_value_band( band->band, band->line_buf, k * skip ) );
-                    }
+        	for ( k = 0; k < img_use_xc; k++ ) {
+                for ( l = 0; l < blockSize; l++ ) {
+                    rgb[l + draw_x + k * blockSize].rgbtBlue  = buf[k * 3 + 2];
+                    rgb[l + draw_x + k * blockSize].rgbtRed   = buf[k * 3 + 0];
+                    rgb[l + draw_x + k * blockSize].rgbtGreen = buf[k * 3 + 1];
                 }
-
-                // 式モードかカラーバーモードか
-                if ( drawModeExp ) {
-                	// 式モード
-                    red   = GetUCharValue( ecalc_get_tree_value( tok_r, vars, 0 ) );
-                    green = GetUCharValue( ecalc_get_tree_value( tok_g, vars, 0 ) );
-                    blue  = GetUCharValue( ecalc_get_tree_value( tok_b, vars, 0 ) );
-                } else {
-                	// カラーバーモード
-                    cmap->evalExpression( vars, 0 );
-                    cmap->makeColor();
-
-                    red   = GetUCharValue( cmap->getR() );
-                    green = GetUCharValue( cmap->getG() );
-                    blue  = GetUCharValue( cmap->getB() );
-                }
-
-                rgb[draw_x + k].rgbtBlue  = blue;
-                rgb[draw_x + k].rgbtRed   = red;
-                rgb[draw_x + k].rgbtGreen = green;
             }
         }
     }
+
+    // バッファ解放
+    free( buf );
 
     // バッファへコピー
     if ( back_screen != NULL ) {
     	back_screen->Canvas->CopyRect( Rect( 0, 0, screen->Width, screen->Height ), screen->Canvas, Rect( 0, 0, screen->Width, screen->Height ) );
 	}
+}
+//---------------------------------------------------------------------------
+void TSatViewMainForm::ReadBandLineBuf( struct REMOS_FRONT_BAND *band, int line, int pos, int count )
+{
+    // 指定されたバンドの指定位置をそのバンドのラインバッファに読み込む
+    if ( !band->canvas_mode ) {
+        remos_get_line_pixels( band->band, band->line_buf, line, pos, count );
+    } else {
+        GetLineData( band, band->line_buf, line, pos, count );
+    }
+}
+//---------------------------------------------------------------------------
+double TSatViewMainForm::ZoomPosToMag( int zoom_pos )
+{
+    // zoomposから倍率計算
+    double ret;
 
-    // 描画終了
-    b_drawing = false;
+    if ( zoom_pos > ZOOM_MAX / 2 ) {
+        /* 縮小 */
+        ret = 1.0 / Power( 2, zoom_pos - ZOOM_MAX / 2 );
+    } else if ( zoom_pos < ZOOM_MAX / 2 ) {
+        /* 拡大 */
+        ret = Power( 2, ZOOM_MAX / 2 - zoom_pos );
+    } else {
+        /* 等倍 */
+        ret = 1;
+    }
+
+    return ret;
 }
 //---------------------------------------------------------------------------
 void __fastcall TSatViewMainForm::DrawImg( void )
 {
     /* 汎用描画関数を使ってメイン画像を描画 */
 
-    /* magがグローバル変数なので何が起こるかわからないから一応倍率計算だけしておく */
-    if ( zoom_pos > ZOOM_MAX / 2 ) {
-    	/* 縮小 */
-        mag  = 1.0 / Power( 2, zoom_pos - ZOOM_MAX / 2 );
-    } else if ( zoom_pos < ZOOM_MAX / 2 ) {
-    	/* 拡大 */
-    	mag  = Power( 2, ZOOM_MAX / 2 - zoom_pos );
-    } else {
-    	/* 等倍 */
-    	mag  = 1;
+    /* 開いてなければ実行しない */
+    if ( !b_open ) {
+    	return;
     }
 
-    /* 描画 */
+    /* 描画中なら実行しない */
+    if ( b_drawing ) {
+    	return;
+    }
+
+    /* 描画許可がなければ描画しない */
+    if ( !b_draw ) {
+    	return;
+    }
+
+    // 描画開始
+    b_drawing = true;
     DrawImg( SatImage, img_back, b_draw_mode_exp, zoom_pos, ScrImgHor->Position, ScrImgVert->Position, color_map );
+    b_drawing = false;
 }
 //---------------------------------------------------------------------------
 unsigned char TSatViewMainForm::GetUCharValue( double value )
@@ -872,6 +775,7 @@ void __fastcall TSatViewMainForm::SatImageMouseDown(TObject *Sender,
     	struct REMOS_FRONT_BAND *box;
         char band[2];
         TPixForm *pix_form;
+        double mag;
 
         // クリック解除
     	b_click = false;
@@ -883,6 +787,9 @@ void __fastcall TSatViewMainForm::SatImageMouseDown(TObject *Sender,
         /* カーソル位置算定 */
         vert = ScrImgVert->Position;
         hor  = ScrImgHor->Position;
+
+        // 倍率
+        mag = ZoomPosToMag( zoom_pos );
 
         /* トライアンドエラーでこうなった */
         cent_c_x = hor + ( X + line_add_x - SatImage->Width / 2 ) / mag;
@@ -916,12 +823,8 @@ void __fastcall TSatViewMainForm::SatImageMouseDown(TObject *Sender,
         for ( i = 0; i < list_band->Count; i++ ) {
             box = (struct REMOS_FRONT_BAND *)list_band->Items[i];
 
-            /* モードで取得方法が違う */
-            if ( box->canvas_mode ) {
-                val = GetPixel( box, img_w * cent_c_y + cent_c_x );
-            } else {
-                val = remos_get_pixel_value( box->band, img_w * cent_c_y + cent_c_x );
-            }
+            // ピクセル値取得
+            val = GetBandPixel( box, img_w * cent_c_y + cent_c_x );
 
             band[0] = tolower( (char)( box->index + 0x41 ) );
             band[1] = '\0';
@@ -949,9 +852,6 @@ void __fastcall TSatViewMainForm::SatImageMouseDown(TObject *Sender,
 void __fastcall TSatViewMainForm::SatImageMouseUp(TObject *Sender,
       TMouseButton Button, TShiftState Shift, int X, int Y)
 {
-	int lon;
-    int lat;
-
     if ( b_click ) {
     	// 距離測定モードならなにもしない
         if ( b_mode_length ) {
@@ -1022,7 +922,6 @@ void __fastcall TSatViewMainForm::BandCloseBtnClick(TObject *Sender)
     struct REMOS_FRONT_BAND *box;
     struct REMOS_FILE_CONTAINER *fc;
     int i;
-    bool b_canvas_mode;
     Graphics::TBitmap *bmp;
     AnsiString fln;
     AnsiString fc_fln;
@@ -1172,9 +1071,6 @@ void __fastcall TSatViewMainForm::HistMouseMove(TObject *Sender,
       TShiftState Shift, int X, int Y)
 {
 	/* ヒストグラムポインタ移動イベント */
-    int w, h;
-    int y;
-    int i;
     float val;
     struct REMOS_FRONT_BAND *box;
 
@@ -1397,9 +1293,6 @@ AnsiString TSatViewMainForm::GetLon( int x, int y )
 	/* 経度を文字で */
     AnsiString ret;
     double lon;
-    double lat;
-    double utm_n;
-    double utm_e;
 
     // UTMモードであればUTMで計算する
     if ( b_config_utm ) {
@@ -1424,9 +1317,6 @@ AnsiString TSatViewMainForm::GetLat( int x, int y )
 	/* 緯度を文字で */
     AnsiString ret;
     double lat;
-    double lon;
-    double utm_n;
-    double utm_e;
 
     // UTMモードであればUTMで計算する
     if ( b_config_utm ) {
@@ -1446,30 +1336,101 @@ AnsiString TSatViewMainForm::GetLat( int x, int y )
     return ret;
 }
 //---------------------------------------------------------------------------
+double TSatViewMainForm::GetBandPixel( struct REMOS_FRONT_BAND *band, int pos )
+{
+    /* モードで取得方法が違う */
+    if ( band->canvas_mode ) {
+        return GetPixel( band, pos );
+    } else {
+        return remos_get_pixel_value( band->band, pos );
+    }
+}
+//---------------------------------------------------------------------------
+void __fastcall TSatViewMainForm::DrawMiniMap( int vert, int hor )
+{
+    /* ミニマップ描画 */
+    int mm_s_x;
+    int mm_s_y;
+    int i;
+    int sc_w;
+    int sc_h;
+    float val;
+    struct REMOS_FRONT_BAND *box;
+    AnsiString str;
+    char band[2];
+
+    sc_h = SatImage->Height;
+    sc_w = SatImage->Width;
+
+    mm_s_x = 100 * ( hor / (float)img_w );
+    mm_s_y = ( ( img_h / (float)img_w ) * 100 ) * ( vert / (float)img_h );
+
+    SatImage->Canvas->Pen->Color   = clRed;
+    SatImage->Canvas->Brush->Color = (TColor)RGB( 255, 200, 200 );
+    SatImage->Canvas->Rectangle( 0, 0, 100, ( img_h / (float)img_w ) * 100 );
+    SatImage->Canvas->Brush->Color = clRed;
+
+    SatImage->Canvas->MoveTo( mm_s_x, 0 );
+    SatImage->Canvas->LineTo( mm_s_x, ( img_h / (float)img_w ) * 100 );
+    SatImage->Canvas->MoveTo( 0, mm_s_y );
+    SatImage->Canvas->LineTo( 100, mm_s_y );
+
+    SatImage->Canvas->MoveTo( sc_w / 2 - line_add_x, 0 );
+    SatImage->Canvas->LineTo( sc_w / 2 - line_add_x, sc_h );
+    SatImage->Canvas->MoveTo( 0, sc_h / 2 - line_add_y );
+    SatImage->Canvas->LineTo( sc_w, sc_h / 2 - line_add_y );
+
+    str = "X, Y : " + IntToStr( hor ) + ", " + IntToStr( vert );
+
+    SatImage->Canvas->Font->Size = 9;
+    SatImage->Canvas->Font->Color = clRed;
+    SatImage->Canvas->Brush->Color = (TColor)RGB( 255, 200, 200 );
+    SatImage->Canvas->TextOutA( sc_w / 2 - line_add_x + 5, sc_h / 2 - line_add_y + 5, str );
+
+    /* 経度緯度を計算出来れば表示 */
+    if ( b_config ) {
+        str = "経度, 緯度 :  " + GetLon( hor, vert ) + ", " + GetLat( hor, vert );
+        SatImage->Canvas->TextOutA( sc_w / 2 - line_add_x + 5, sc_h / 2 - line_add_y + 5 + SatImage->Canvas->TextHeight( str ), str );
+    }
+
+    for ( i = 0; i < list_band->Count; i++ ) {
+        box = (struct REMOS_FRONT_BAND *)list_band->Items[i];
+
+        // ピクセル値取得
+        val = GetBandPixel( box, img_w * vert + hor  );
+
+        band[0] = tolower( (char)( box->index + 0x41 ) );
+        band[1] = '\0';
+
+        str = band;
+        str = str + " : " + IntToStr( (int)val );
+
+        SatImage->Canvas->Font->Size = 9;
+        SatImage->Canvas->Font->Color = clRed;
+        SatImage->Canvas->Brush->Color = (TColor)RGB( 255, 200, 200 );
+        SatImage->Canvas->TextOutA( sc_w / 2 - line_add_x + 5, sc_h / 2 + 5 + ( i + 2 ) * SatImage->Canvas->TextHeight( str ) - line_add_y, str );
+    }
+
+    // 描画中
+    SatImage->Canvas->TextOutA( sc_w / 2 - line_add_x + 5, sc_h / 2 + 5 + ( list_band->Count + 1 + 2 ) * SatImage->Canvas->TextHeight( str ) - line_add_y, "描画中" );
+}
+//---------------------------------------------------------------------------
 void __fastcall TSatViewMainForm::SatImageMouseMove(TObject *Sender,
       TShiftState Shift, int X, int Y)
 {
 	int r;
     int g;
     int b;
-    int sc_h;
-    int sc_w;
-    int mm_s_x;
-    int mm_s_y;
     int vert;
     int hor;
     int i;
     int cent_c_x;
     int cent_c_y;
-    int line_x;
-    int line_y;
     float val;
     struct REMOS_FRONT_BAND *box;
     TColor cl;
     AnsiString str;
     char band[2];
-    double lon;
-    double lat;
     double var[ECALC_VAR_COUNT];
     double *vars[ECALC_VAR_COUNT];
 
@@ -1487,8 +1448,8 @@ void __fastcall TSatViewMainForm::SatImageMouseMove(TObject *Sender,
     /* カーソル移動 */
     b_move = true;
 
-    sc_h = SatImage->Height;
-    sc_w = SatImage->Width;
+    // 倍率計算
+    double mag = ZoomPosToMag( zoom_pos );
 
 	/* クリックされている？ */
 	if ( b_click ) {
@@ -1505,22 +1466,8 @@ void __fastcall TSatViewMainForm::SatImageMouseMove(TObject *Sender,
             SatImage->Canvas->MoveTo( cp_x, cp_y );
             SatImage->Canvas->LineTo( X, Y );
 
-            // 倍率計算
-            double real_mag;
-
-            if ( zoom_pos > ZOOM_MAX / 2 ) {
-                /* 縮小 */
-                real_mag  = 1.0 / Power( 2, zoom_pos - ZOOM_MAX / 2 );
-            } else if ( zoom_pos < ZOOM_MAX / 2 ) {
-                /* 拡大 */
-                real_mag = Power( 2, ZOOM_MAX / 2 - zoom_pos );
-            } else {
-                /* 等倍 */
-                real_mag = 1;
-            }
-
             // 距離描画
-            double length = sqrt( ( X - cp_x ) * ( X - cp_x ) * conf_resolution_x * conf_resolution_x / ( real_mag * real_mag ) + ( Y - cp_y ) * ( Y - cp_y ) * conf_resolution_y * conf_resolution_y / ( real_mag * real_mag ) );
+            double length = sqrt( ( X - cp_x ) * ( X - cp_x ) * conf_resolution_x * conf_resolution_x / ( mag * mag ) + ( Y - cp_y ) * ( Y - cp_y ) * conf_resolution_y * conf_resolution_y / ( mag * mag ) );
 
             SatImage->Canvas->Font->Color = clRed;
             SatImage->Canvas->TextOutA( X + 5, Y - 5 - SatImage->Canvas->TextHeight( "height" ), IntToStr( (int)length ) + "[m]" );
@@ -1543,62 +1490,7 @@ void __fastcall TSatViewMainForm::SatImageMouseMove(TObject *Sender,
             SatImage->Canvas->CopyRect( Rect( - 1 * ( cp_x - X ), - 1 * ( cp_y - Y ), SatImage->Width - ( ( cp_x - X ) ), SatImage->Height - ( ( cp_y - Y ) ) ), img_back->Canvas, Rect( 0, 0, SatImage->Width, SatImage->Height ) );
 
             /* ミニマップ描画 */
-            mm_s_x = 100 * ( hor / (float)img_w );
-            mm_s_y = ( ( img_h / (float)img_w ) * 100 ) * ( vert / (float)img_h );
-
-            SatImage->Canvas->Pen->Color   = clRed;
-            SatImage->Canvas->Brush->Color = (TColor)RGB( 255, 200, 200 );
-            SatImage->Canvas->Rectangle( 0, 0, 100, ( img_h / (float)img_w ) * 100 );
-            SatImage->Canvas->Brush->Color = clRed;
-
-            SatImage->Canvas->MoveTo( mm_s_x, 0 );
-            SatImage->Canvas->LineTo( mm_s_x, ( img_h / (float)img_w ) * 100 );
-            SatImage->Canvas->MoveTo( 0, mm_s_y );
-            SatImage->Canvas->LineTo( 100, mm_s_y );
-
-            /* 十字線 補正項 : line_add_ : DEBUG */
-            SatImage->Canvas->MoveTo( sc_w / 2 - line_add_x, 0 );
-            SatImage->Canvas->LineTo( sc_w / 2 - line_add_x, sc_h );
-            SatImage->Canvas->MoveTo( 0, sc_h / 2 - line_add_y );
-            SatImage->Canvas->LineTo( sc_w, sc_h / 2 - line_add_y );
-
-            str = "X, Y : " + IntToStr( hor ) + ", " + IntToStr( vert );
-
-            SatImage->Canvas->Font->Size = 9;
-            SatImage->Canvas->Font->Color = clRed;
-            SatImage->Canvas->Brush->Color = (TColor)RGB( 255, 200, 200 );
-            SatImage->Canvas->TextOutA( sc_w / 2 - line_add_x + 5, sc_h / 2 - line_add_y + 5, str );
-
-            /* 経度緯度を計算出来れば表示 */
-            if ( b_config ) {
-                str = "経度, 緯度 :  " + GetLon( hor, vert ) + ", " + GetLat( hor, vert );
-                SatImage->Canvas->TextOutA( sc_w / 2 - line_add_x + 5, sc_h / 2 - line_add_y + 5 + SatImage->Canvas->TextHeight( str ), str );
-            }
-
-            for ( i = 0; i < list_band->Count; i++ ) {
-                box = (struct REMOS_FRONT_BAND *)list_band->Items[i];
-
-                /* モードで取得方法が違う */
-                if ( box->canvas_mode ) {
-                    val = GetPixel( box, img_w * vert + hor  );
-                } else {
-                    val = remos_get_pixel_value( box->band, img_w * vert + hor );
-                }
-
-                band[0] = tolower( (char)( box->index + 0x41 ) );
-                band[1] = '\0';
-
-                str = band;
-                str = str + " : " + IntToStr( (int)val );
-
-                SatImage->Canvas->Font->Size = 9;
-                SatImage->Canvas->Font->Color = clRed;
-                SatImage->Canvas->Brush->Color = (TColor)RGB( 255, 200, 200 );
-                SatImage->Canvas->TextOutA( sc_w / 2 - line_add_x + 5, sc_h / 2 + 5 + ( i + 2 ) * SatImage->Canvas->TextHeight( str ) - line_add_y, str );
-            }
-
-            // 描画中
-            SatImage->Canvas->TextOutA( sc_w / 2 - line_add_x + 5, sc_h / 2 + 5 + ( list_band->Count + 1 + 2 ) * SatImage->Canvas->TextHeight( str ) - line_add_y, "描画中" );
+            DrawMiniMap( vert, hor );
         }
 
     } else {
@@ -1661,12 +1553,8 @@ void __fastcall TSatViewMainForm::SatImageMouseMove(TObject *Sender,
             for ( i = 0; i < list_band->Count; i++ ) {
                 box = (struct REMOS_FRONT_BAND *)list_band->Items[i];
 
-            	/* モードで取得方法が違う */
-            	if ( box->canvas_mode ) {
-              		val = GetPixel( box, img_w * cent_c_y + cent_c_x );
-            	} else {
-            		val = remos_get_pixel_value( box->band, img_w * cent_c_y + cent_c_x );
-            	}
+            	// ピクセル値取得
+                val = GetBandPixel( box, img_w * cent_c_y + cent_c_x );
 
                 band[0] = tolower( (char)( box->index + 0x41 ) );
                 band[1] = '\0';
@@ -1710,11 +1598,7 @@ void __fastcall TSatViewMainForm::SatImageMouseMove(TObject *Sender,
                 box = (struct REMOS_FRONT_BAND *)list_band->Items[i];
 
             	/* モードで取得方法が違う */
-            	if ( box->canvas_mode ) {
-              		val = GetPixel( box, img_w * cent_c_y + cent_c_x );
-            	} else {
-            		val = remos_get_pixel_value( box->band, img_w * cent_c_y + cent_c_x );
-            	}
+                val = GetBandPixel( box, img_w * cent_c_y + cent_c_x );
 
             	// 式変数に登録
                 var[i] = val;
@@ -1812,15 +1696,6 @@ void __fastcall TSatViewMainForm::ImageMouseWheelEvent( TObject *Sender, TShiftS
 void __fastcall TSatViewMainForm::ScrImgHorScroll(TObject *Sender,
       TScrollCode ScrollCode, int &ScrollPos)
 {
-	int r;
-    int g;
-    int b;
-    int sc_h;
-    int sc_w;
-    int mm_s_x;
-    int mm_s_y;
-    int mm_e_x;
-    int mm_e_y;
     int vert;
     int hor;
     AnsiString str;
@@ -1839,54 +1714,16 @@ void __fastcall TSatViewMainForm::ScrImgHorScroll(TObject *Sender,
         }
     } else if ( ScrollCode == scTrack || ScrollCode == scLineUp || ScrollCode == scLineDown || ScrollCode == scPageDown || ScrollCode == scPageUp ) {
     	/* ミニマップ描画 */
-        sc_h = SatImage->Height;
-        sc_w = SatImage->Width;
         vert = ScrImgVert->Position;
         hor  = ScrollPos;
 
-        mm_s_x = 100 * ( hor / (float)img_w );
-        mm_s_y = ( ( img_h / (float)img_w ) * 100 ) * ( vert / (float)img_h );
-        mm_e_x = mm_s_x + 1;
-        mm_e_y = mm_s_y + 1;
-
-        SatImage->Canvas->Pen->Width   = 1;
-        SatImage->Canvas->Pen->Color   = clRed;
-        SatImage->Canvas->Brush->Color = (TColor)RGB( 255, 200, 200 );
-        SatImage->Canvas->Rectangle( 0, 0, 100, ( img_h / (float)img_w ) * 100 );
-        SatImage->Canvas->Brush->Color = clRed;
-        SatImage->Canvas->Rectangle( Rect( mm_s_x, mm_s_y, mm_e_x, mm_e_y ) );
-        SatImage->Canvas->MoveTo( mm_s_x, 0 );
-        SatImage->Canvas->LineTo( mm_s_x, ( img_h / (float)img_w ) * 100 );
-        SatImage->Canvas->MoveTo( 0, mm_s_y );
-        SatImage->Canvas->LineTo( 100, mm_s_y );
-
-        SatImage->Canvas->MoveTo( sc_w / 2, 0 );
-        SatImage->Canvas->LineTo( sc_w / 2, sc_h );
-        SatImage->Canvas->MoveTo( 0, sc_h / 2 );
-        SatImage->Canvas->LineTo( sc_w, sc_h / 2 );
-
-        str = IntToStr( hor ) + ", " + IntToStr( vert ) + "          ";
-
-        SatImage->Canvas->Font->Size = 9;
-        SatImage->Canvas->Font->Color = clRed;
-        SatImage->Canvas->Brush->Color = (TColor)RGB( 255, 200, 200 );
-        SatImage->Canvas->TextOutA( sc_w / 2 + 5, sc_h / 2 + 5, str );
-        SatImage->Canvas->TextOutA( sc_w / 2 + 5, sc_h / 2 + 5 + SatImage->Canvas->TextHeight( str ), "描画中" );
+        DrawMiniMap( vert, hor );
     }
 }
 //---------------------------------------------------------------------------
 void __fastcall TSatViewMainForm::ScrImgVertScroll(TObject *Sender,
       TScrollCode ScrollCode, int &ScrollPos)
 {
-	int r;
-    int g;
-    int b;
-    int sc_h;
-    int sc_w;
-    int mm_s_x;
-    int mm_s_y;
-    int mm_e_x;
-    int mm_e_y;
     int vert;
     int hor;
     AnsiString str;
@@ -1905,39 +1742,10 @@ void __fastcall TSatViewMainForm::ScrImgVertScroll(TObject *Sender,
         }
     } else if ( ScrollCode == scTrack || ScrollCode == scLineUp || ScrollCode == scLineDown || ScrollCode == scPageDown || ScrollCode == scPageUp ) {
     	/* ミニマップ描画 */
-        sc_h = SatImage->Height;
-        sc_w = SatImage->Width;
         vert = ScrollPos;
         hor  = ScrImgHor->Position;
 
-        mm_s_x = 100 * ( hor / (float)img_w );
-        mm_s_y = ( ( img_h / (float)img_w ) * 100 ) * ( vert / (float)img_h );
-        mm_e_x = mm_s_x + 1;
-        mm_e_y = mm_s_y + 1;
-
-        SatImage->Canvas->Pen->Width   = 1;
-        SatImage->Canvas->Pen->Color   = clRed;
-        SatImage->Canvas->Brush->Color = (TColor)RGB( 255, 200, 200 );
-        SatImage->Canvas->Rectangle( 0, 0, 100, ( img_h / (float)img_w ) * 100 );
-        SatImage->Canvas->Brush->Color = clRed;
-        SatImage->Canvas->Rectangle( Rect( mm_s_x, mm_s_y, mm_e_x, mm_e_y ) );
-        SatImage->Canvas->MoveTo( mm_s_x, 0 );
-        SatImage->Canvas->LineTo( mm_s_x, ( img_h / (float)img_w ) * 100 );
-        SatImage->Canvas->MoveTo( 0, mm_s_y );
-        SatImage->Canvas->LineTo( 100, mm_s_y );
-
-        SatImage->Canvas->MoveTo( sc_w / 2, 0 );
-        SatImage->Canvas->LineTo( sc_w / 2, sc_h );
-        SatImage->Canvas->MoveTo( 0, sc_h / 2 );
-        SatImage->Canvas->LineTo( sc_w, sc_h / 2 );
-
-        str = IntToStr( hor ) + ", " + IntToStr( vert ) + "          ";
-
-        SatImage->Canvas->Font->Size = 9;
-        SatImage->Canvas->Font->Color = clRed;
-        SatImage->Canvas->Brush->Color = (TColor)RGB( 255, 200, 200 );
-        SatImage->Canvas->TextOutA( sc_w / 2 + 5, sc_h / 2 + 5, str );
-        SatImage->Canvas->TextOutA( sc_w / 2 + 5, sc_h / 2 + 5 + SatImage->Canvas->TextHeight( str ), "描画中" );
+        DrawMiniMap( vert, hor );
     }
 }
 //---------------------------------------------------------------------------
@@ -2088,7 +1896,6 @@ void __fastcall TSatViewMainForm::MaxBtnClick(TObject *Sender)
 {
 	/* レンジ設定解除 */
     struct REMOS_FRONT_BAND *box;
-    char band[2];
 
     /* BNAD特定 */
     box = (struct REMOS_FRONT_BAND *)( ( (TBitBtn *)Sender )->Parent->Tag );
@@ -2148,9 +1955,6 @@ void __fastcall TSatViewMainForm::ZoomImageMouseMove(TObject *Sender,
 {
 	TPoint points[3];
     int skip;
-    int cent_y;
-    int track_pos;
-    int i;
     int zoom_change;
     double zoom_mag;
 
@@ -2188,33 +1992,15 @@ void __fastcall TSatViewMainForm::ZoomImageMouseMove(TObject *Sender,
     }
 
     /* 倍率設定 */
-    if ( zoom_pos > ZOOM_MAX / 2 ) {
-    	/* 縮小 */
-        mag  = 1.0 / Power( 2, zoom_pos - ZOOM_MAX / 2 );
-    } else if ( zoom_pos < ZOOM_MAX / 2 ) {
-    	/* 拡大 */
-    	mag  = Power( 2, ZOOM_MAX / 2 - zoom_pos );
-    } else {
-    	/* 等倍 */
-    	mag  = 1;
-    }
+    // mag = ZoomPosToMag( zoom_pos );
 
     /* 描画 */
     DrawZoomBox( X, Y );
 
     zoom_change = zoom_pos_click - zoom_pos + ZOOM_MAX / 2;
 
-    /* 倍率設定 */
-    if ( zoom_change > ( ZOOM_MAX / 2 ) ) {
-    	/* 縮小 */
-        zoom_mag  = 1.0 / Power( 2, zoom_change - ( ZOOM_MAX / 2 ) );
-    } else if ( zoom_change < ( ZOOM_MAX / 2 ) ) {
-    	/* 拡大 */
-    	zoom_mag  = Power( 2, ( ZOOM_MAX / 2 ) - zoom_change );
-    } else {
-    	/* 等倍 */
-    	zoom_mag  = 1;
-    }
+    /* 変更後の倍率 */
+    zoom_mag = ZoomPosToMag( zoom_change );
 
     /* 必要なら描画 */
     if ( zoom_pos_bef != zoom_pos ) {
@@ -2240,11 +2026,8 @@ void __fastcall TSatViewMainForm::DrawZoomBox( int X, int Y )
 {
 	TPoint points[3];
     int skip;
-    int cent_y;
     int track_pos;
     int i;
-    int zoom_change;
-    double zoom_mag;
 
     /* 範囲調整 */
     if ( X < 0 ) {
@@ -2782,9 +2565,7 @@ unsigned char TSatViewMainForm::GetPixel( struct REMOS_FRONT_BAND *box, int pos 
 	/* Canvasモードでの1pix取得関数 */
     Graphics::TBitmap *bmp;
     RGBTRIPLE *rgb;
-    int i;
     int x;
-    int line;
 
     /* 0除算対策 */
     if ( pos < 1 ) {
@@ -3226,8 +3007,6 @@ void __fastcall TSatViewMainForm::AppMessage( tagMSG &msg, bool &handled )
             /* DEBUG : 条件がおかしかった msg_buf_mode = 1 */
             if ( msg_buf_mode == 1 ) {
                 /* 経度緯度モードだった */
-                // dbg = "lat " + FloatToStr( msg_buf_lat ) + " lon " + FloatToStr( msg_buf_lon );
-                // Application->MessageBoxA( dbg.c_str(), "", MB_OK );
 
                 /* 経度緯度モードに対応出来れば経度緯度モードでリンク */
                 if ( b_config ) {
@@ -3276,7 +3055,6 @@ void __fastcall TSatViewMainForm::OpenFiles( void )
     int ret;
     AnsiString msg, fln, str_buf;
     AnsiString fln_0, fln_1, fln_2;
-    char num[2];
     TSearchRec sr;
     TSearchRec sr_conf, sr_conf_2;
 
@@ -4178,4 +3956,10 @@ void __fastcall TSatViewMainForm::MI_C_LS8_THMClick(TObject *Sender)
 	PresetFormLS8_THM->Show();
 }
 //---------------------------------------------------------------------------
+
+
+
+
+
+
 

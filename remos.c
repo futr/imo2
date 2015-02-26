@@ -1,6 +1,6 @@
 #include "remos.h"
 
-/* 汎用衛星データリーダーライブラリ ver1.3 */
+/* 汎用衛星データリーダーライブラリ */
 /* 簡易TIFFアクセス */
 /* 8bit非圧縮オンリー */
 /* GeoTiffのタグはわからない */
@@ -9,7 +9,7 @@
 static int remos_I2int( char *data, int length );															/* I形式のテキストをintに alos等用 */
 static unsigned int remos_BE2usint( char *data, int length );												/* ビッグエンディアンのデータを読む */
 static unsigned int remos_data_to_value( unsigned char *data, int len, int endian );						/* エンディアンに従ってデータを読む */
-static float remos_data_to_float( unsigned char *data, int len, int endian );										/* エンディアンに従ってデータを読む ( float ) */
+static float remos_data_to_float( unsigned char *data, int len, int endian );								/* エンディアンに従ってデータを読む ( float ) */
 
 int remos_open( struct REMOS_FILE_CONTAINER *cont, char *filename, int type )
 {

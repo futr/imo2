@@ -32,9 +32,6 @@ void __fastcall TSaveForm::CancelButtonClick(TObject *Sender)
 void __fastcall TSaveForm::SaveButtonClick(TObject *Sender)
 {
 	/* •Û‘¶‚·‚é */
-    int w;
-    int h;
-
     SaveButton->Enabled = false;
     CancelButton->Enabled = true;
     SaveModeRadioGroup->Enabled = false;
@@ -78,7 +75,6 @@ bool __fastcall TSaveForm::SaveToBmp( AnsiString filename, int zpos )
     EBMP_FILE ebmp;
 
     struct REMOS_FRONT_BAND *band;
-    unsigned char *line_buf;
     unsigned int start;
     unsigned int now;
     double var[ECALC_VAR_COUNT];
@@ -87,9 +83,7 @@ bool __fastcall TSaveForm::SaveToBmp( AnsiString filename, int zpos )
 
     int i, j, k, l;
     int skip;
-    int xpos;
     int zoom_pos;
-    RGBTRIPLE *rgb;
     unsigned char red;
     unsigned char blue;
     unsigned char green;
@@ -99,25 +93,11 @@ bool __fastcall TSaveForm::SaveToBmp( AnsiString filename, int zpos )
     struct ECALC_TOKEN *tok_g;
     struct ECALC_TOKEN *tok_b;
 
-    int sc_x;
-    int sc_y;
-
     int img_read_xc;
     int img_read_yc;
-    int img_read_xw;
-    int img_read_yw;
-
-    int draw_w;
-    int draw_h;
-    int draw_x;
-    int draw_y;
-    double draw_x_b;
-    double draw_y_b;
 
     double mag;
 
-    int bb_w;
-    int bb_h;
 
     unsigned char *buf;
 
