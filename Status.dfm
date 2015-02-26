@@ -1,6 +1,7 @@
 object StatusForm: TStatusForm
   Left = 191
   Top = 105
+  BorderIcons = []
   BorderStyle = bsDialog
   Caption = #20966#29702#20013' '#12375#12400#12425#12367#12362#24453#12385#12367#12384#12373#12356
   ClientHeight = 44

@@ -273,6 +273,7 @@ __published:	// IDE 管理のコンポーネント
 	void __fastcall MI_C_GDEMClick(TObject *Sender);
 	void __fastcall TBCurposClick(TObject *Sender);
 	void __fastcall MI_C_LS8_THMClick(TObject *Sender);
+    void __fastcall SatImageDblClick(TObject *Sender);
 private:	// ユーザー宣言
 public:
 	TList *list_file;				// ファイル用リスト
@@ -310,7 +311,6 @@ public:
     bool b_mode_stamp_cb; 			// スタンプモード
     bool b_draw_mode_exp;			// 式描画モード
 
-
     bool b_config;     				/* 設定ファイル読み込み済み */
     bool b_config_land;				/* LANDSAT用 */
     bool b_config_resolution;		// 解像度設定
@@ -347,10 +347,6 @@ public:
     int zoom_pos_click;
     int zoom_pos_bef;
 
-    int img_start_x_line;
-    int img_start_y_line;
-    int img_cent_x_line;
-    int img_cent_y_line;
     int line_add_x;
     int line_add_y;
 
@@ -410,13 +406,8 @@ public:
     // カラーバー用
     void __fastcall setColorBarExp( AnsiString exp );
 
-    /* ヒント処理 */
     void __fastcall ShowHint( TObject *sender );
-
-    /* D&D用 */
     void __fastcall OnDropFiles( TWMDropFiles msg );
-
-    /* メッセージ */
     void __fastcall AppMessage( tagMSG &msg, bool &handled );
 
     /* 指定バンドボックスのレンジ設定解除 */
@@ -434,6 +425,9 @@ public:
     void ReadBandLineBuf( struct REMOS_FRONT_BAND *band, int line, int pos, int count );
     double ZoomPosToMag( int zoom_pos );
     double GetBandPixel( struct REMOS_FRONT_BAND *band, int pos );
+    void ScrnPosToImgPos( int x, int y, int *img_x, int *img_y );
+    void ZoomUp( bool draw = true );
+    void ZoomDown( bool draw = true );
 
     void syncPos();
 

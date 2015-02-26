@@ -75,33 +75,44 @@ bool __fastcall TSaveForm::SaveToBmp( AnsiString filename, int zpos )
     EBMP_FILE ebmp;
 
     struct REMOS_FRONT_BAND *band;
-    unsigned int start;
-    unsigned int now;
     double var[ECALC_VAR_COUNT];
     double *vars[ECALC_VAR_COUNT];
-    AnsiString str;
-
-    int i, j, k, l;
-    int skip;
-    int zoom_pos;
-    unsigned char red;
-    unsigned char blue;
-    unsigned char green;
 
     /* 電卓ユニット */
     struct ECALC_TOKEN *tok_r;
     struct ECALC_TOKEN *tok_g;
     struct ECALC_TOKEN *tok_b;
 
+    int zoom_pos;
+    AnsiString stime;
+    unsigned int start;
+    unsigned int now;
+
+    // MainFormから持ってくる
+    mf = SatViewMainForm;
+    ColorMap *cmap = mf->color_map;
+    TList *list_band = mf->list_band;
+    bool drawModeExp = mf->b_draw_mode_exp;
+
+    int i, j, k, l;
+    int skip;
+    int blockSize;
+    RGBTRIPLE *rgb;
+    unsigned char red;
+    unsigned char blue;
+    unsigned char green;
+    unsigned char *buf;
+    double mag;
+    int img_start_x;
+    int img_start_y;
     int img_read_xc;
     int img_read_yc;
-
-    double mag;
-
-
-    unsigned char *buf;
-
-    AnsiString stime;
+    int img_use_xc;
+    int img_use_yc;
+    int draw_w;
+    int draw_h;
+    int draw_x;
+    int draw_y;
 
     /* 時間測定開始 */
     start = GetTickCount();
@@ -130,6 +141,10 @@ bool __fastcall TSaveForm::SaveToBmp( AnsiString filename, int zpos )
 
     mf->b_drawing = true;
 
+    // ズームは一倍固定
+    zoom_pos = ZOOM_MAX / 2;
+    mag = mf->ZoomPosToMag( zoom_pos );
+
     /* 変数ポインタ登録 */
     for ( i = 0; i < ECALC_VAR_COUNT; i++ ) {
     	vars[i] = &var[i];
@@ -149,227 +164,129 @@ bool __fastcall TSaveForm::SaveToBmp( AnsiString filename, int zpos )
 	tok_r = ecalc_make_tree( tok_r );
 
     /* 座標計算 */
+    draw_x = 0;
+    draw_y = 0;
+    draw_w = mf->img_w;
+    draw_h = mf->img_h;
 
-	/* DEBUG : ここでは強制等倍 */
-    zoom_pos = ZOOM_MAX / 2;
+    // skip（読み込み飛ばし量）と画素ブロックサイズ決定
 
-    /* 倍率設定 */
-    if ( zoom_pos > ZOOM_MAX / 2 ) {
-    	/* 縮小 */
-        mag  = 1.0 / Power( 2, zoom_pos - ZOOM_MAX / 2 );
-        skip = 1.0 / mag;
-    } else if ( zoom_pos < ZOOM_MAX / 2 ) {
-    	/* 拡大 */
-    	mag  = Power( 2, ZOOM_MAX / 2 - zoom_pos );
-        skip = mag;
-    } else {
-    	/* 等倍 */
-    	mag  = 1;
-        skip = 1;
-    }
-
-    /* 拡大か縮小化で描画方法変更 */
     if ( mag >= 1 ) {
-    	/* 拡大 */
-
-    	/* 読み込み個数決定 */
-    	img_read_xc = mf->img_w;
-    	img_read_yc = mf->img_h;
-
-        /* プログレスバー設定 */
-        SaveProgressBar->Max = img_read_yc;
-        SaveProgressBar->Position = 0;
-
-        /* BMP作成 */
-        ebmp_create_file_open( &ebmp, filename.c_str(), img_read_xc * skip, img_read_yc * skip );
-
-    	/* バッファー確保 */
-    	buf = (unsigned char *)malloc( ebmp.line_size );
-
-        /* 読み込み描画ループ */
-        for ( i = 0; i < img_read_yc; i++ ) {
-        	/* 強制停止されたら止まる */
-            if ( !saving ) {
-            	break;
-            }
-
-            /* 各バンド読み込み */
-            for ( j = 0; j < mf->list_band->Count; j++ ) {
-                /* バンド指定、データ読み込み */
-                band = (struct REMOS_FRONT_BAND *)(mf->list_band->Items[j]);
-
-                /* モードで方法が違う */
-                if ( !band->canvas_mode ) {
-                	remos_get_line_pixels( band->band, band->line_buf, 0 + i, 0, img_read_xc );
-                } else {
-                	mf->GetLineData( band, band->line_buf, 0 + i, 0, img_read_xc );
-                }
-            }
-
-            /* 画面に書き込み */
-
-            /* 列データ読み出しループ */
-            for ( k = 0; k < img_read_xc; k++ ) {
-                /* 色作成 */
-                for ( l = 0; l < mf->list_band->Count; l++ ) {
-                    /* バンド取得 */
-                    band = (struct REMOS_FRONT_BAND *)(mf->list_band->Items[l]);
-
-                    /* 値登録 */
-                    if ( band->canvas_mode ) {
-                        // キャンバスモード
-                    	var[l] = remos_get_ranged_pixel( band->band, band->line_buf[k] );
-                    } else {
-                        var[l] = remos_get_ranged_pixel( band->band, remos_data_to_value_band( band->band, band->line_buf, k ) );
-                    }
-                }
-
-                // 式モードかカラーバーモードか
-                if ( mf->b_draw_mode_exp ) {
-                	// 式モード
-                    red   = mf->GetUCharValue( ecalc_get_tree_value( tok_r, vars, 0 ) );
-                    green = mf->GetUCharValue( ecalc_get_tree_value( tok_g, vars, 0 ) );
-                    blue  = mf->GetUCharValue( ecalc_get_tree_value( tok_b, vars, 0 ) );
-                } else {
-                	// カラーバーモード
-                    mf->color_map->evalExpression( vars, 0 );
-                    mf->color_map->makeColor();
-
-                    red   = mf->GetUCharValue( mf->color_map->getR() );
-                    green = mf->GetUCharValue( mf->color_map->getG() );
-                    blue  = mf->GetUCharValue( mf->color_map->getB() );
-                }
-
-                for ( l = 0; l < skip; l++ ) {
-                    buf[l * 3 + k * 3 * skip + 0] = blue;
-                    buf[l * 3 + k * 3 * skip + 1] = green;
-                    buf[l * 3 + k * 3 * skip + 2] = red;
-                }
-            }
-
-            /* 行ループ */
-            for ( j = 0; j < skip; j++ ) {
-                /* 画像書き出し */
-                ebmp_write_line( &ebmp, i * skip + j, buf, ebmp.line_size );
-            }
-
-            /* プログレス */
-            SaveProgressBar->Position = i;
-
-            /* 時間計測 */
-            now = GetTickCount();
-
-            if ( i ) {
-            	stime.sprintf( "処理時間 : %d秒 / %d秒", ( now - start ) / 1000, (int)( ( now - start ) * ( (float)img_read_yc / i ) / 1000 ) );
-            }
-
-            TimeLabel->Caption = stime;
-
-            Application->ProcessMessages();
-        }
-
-        /* BMPファイル閉じる */
-        ebmp_create_file_close( &ebmp );
+        skip = 1;
+        blockSize = mag;
     } else {
-    	/* 縮小 */
-
-    	/* 読み込み個数決定 */
-        img_read_xc = ( mf->img_w ) / skip;
-        img_read_yc = ( mf->img_h ) / skip;
-
-        /* プログレスバー設定 */
-        SaveProgressBar->Max = img_read_yc;
-        SaveProgressBar->Position = 0;
-
-        /* BMP作成 */
-        ebmp_create_file_open( &ebmp, filename.c_str(), img_read_xc, img_read_yc );
-
-    	/* バッファー確保 */
-    	buf = (unsigned char *)malloc( ebmp.line_size );
-
-        /* 読み込み描画ループ */
-        for ( i = 0; i < img_read_yc; i++ ) {
-        	// 強制停止されたら止まる
-            if ( !saving ) {
-            	break;
-            }
-
-            /* 各バンド読み込み */
-            for ( j = 0; j < mf->list_band->Count; j++ ) {
-                /* バンド指定、データ読み込み */
-                band = (struct REMOS_FRONT_BAND *)(mf->list_band->Items[j]);
-
-               /* モードで方法が違う */
-                if ( !band->canvas_mode ) {
-                	remos_get_line_pixels( band->band, band->line_buf, i * skip, 0, img_read_xc * skip );
-                } else {
-                	mf->GetLineData( band, band->line_buf, i * skip, 0, img_read_xc * skip );
-                }
-            }
-
-            /* 画面に書き込み */
-
-            /* 列データ読み出しループ */
-            for ( k = 0; k < img_read_xc; k++ ) {
-                /* 色作成 */
-                for ( l = 0; l < mf->list_band->Count; l++ ) {
-                	/* バンド取得 */
-                    band = (struct REMOS_FRONT_BAND *)(mf->list_band->Items[l]);
-
-                    /* 値登録 */
-                    if ( band->canvas_mode ) {
-                        // キャンバスモード
-                    	var[l] = remos_get_ranged_pixel( band->band, band->line_buf[k * skip] );
-                    } else {
-                        var[l] = remos_get_ranged_pixel( band->band, remos_data_to_value_band( band->band, band->line_buf, k * skip ) );
-                    }
-                }
-
-                // 式モードかカラーバーモードか
-                if ( mf->b_draw_mode_exp ) {
-                	// 式モード
-                    red   = mf->GetUCharValue( ecalc_get_tree_value( tok_r, vars, 0 ) );
-                    green = mf->GetUCharValue( ecalc_get_tree_value( tok_g, vars, 0 ) );
-                    blue  = mf->GetUCharValue( ecalc_get_tree_value( tok_b, vars, 0 ) );
-                } else {
-                	// カラーバーモード
-                    mf->color_map->evalExpression( vars, 0 );
-                    mf->color_map->makeColor();
-
-                    red   = mf->GetUCharValue( mf->color_map->getR() );
-                    green = mf->GetUCharValue( mf->color_map->getG() );
-                    blue  = mf->GetUCharValue( mf->color_map->getB() );
-                }
-
-                buf[k * 3 + 0] = blue;
-                buf[k * 3 + 1] = green;
-                buf[k * 3 + 2] = red;
-            }
-
-            /* 画像書き出し */
-            ebmp_write_line( &ebmp, i, buf, ebmp.line_size );
-
-            /* プログレス */
-            SaveProgressBar->Position = i;
-
-            /* 時間計測 */
-            now = GetTickCount();
-
-            if ( i ) {
-            	stime.sprintf( "処理時間 : %d秒 / %d秒", ( now - start ) / 1000, (int)( ( now - start ) * ( (float)img_read_yc / i ) / 1000 ) );
-            }
-
-            TimeLabel->Caption = stime;
-
-            Application->ProcessMessages();
-        }
-
-        /* BMPファイル閉じる */
-        ebmp_create_file_close( &ebmp );
+        skip = 1 / mag;
+        blockSize = 1;
     }
 
-    /* バッファ開放 */
+    /* 画像読み込み開始地点決定 */
+    img_start_x = 0;
+    img_start_y = 0;
+
+	/* 読み込み個数（範囲）決定 */
+	img_read_xc = ( draw_w - draw_x ) / mag;
+	img_read_yc = ( draw_h - draw_y ) / mag;
+
+    /* 実際に使われる個数 */
+    img_use_xc = img_read_xc / skip;
+    img_use_yc = img_read_yc / skip;
+
+    // 画面行バッファ作成 ( R, G, B )
+    buf = (unsigned char *)malloc( img_read_xc * sizeof( RGBTRIPLE ) * blockSize );
+
+    /* プログレスバー設定 */
+    SaveProgressBar->Max = img_read_yc;
+    SaveProgressBar->Position = 0;
+
+    /* BMP作成 */
+    ebmp_create_file_open( &ebmp, filename.c_str(), img_read_xc, img_read_yc );
+
+    // 読み込みと描画ループ
+    for ( i = 0; i < img_use_yc; i++ ) {
+        /* 各バンド読み込み */
+        for ( j = 0; j < list_band->Count; j++ ) {
+            /* バンド指定、データ読み込み */
+            band = (struct REMOS_FRONT_BAND *)(list_band->Items[j]);
+
+            // バンドのラインバッファ読み込み
+            mf->ReadBandLineBuf( band, img_start_y + i * skip, img_start_x, img_read_xc );
+        }
+
+        /* 列データ読み出しループ */
+        for ( j = 0; j < img_use_xc; j++ ) {
+            /* 色作成 */
+            for ( k = 0; k < list_band->Count; k++ ) {
+            	/* バンド取得 */
+                band = (struct REMOS_FRONT_BAND *)(list_band->Items[k]);
+
+                /* 値登録 */
+                if ( band->canvas_mode ) {
+                    // キャンバスモード
+                	var[k] = remos_get_ranged_pixel( band->band, band->line_buf[j * skip] );
+                } else {
+                    var[k] = remos_get_ranged_pixel( band->band, remos_data_to_value_band( band->band, band->line_buf, j * skip ) );
+                }
+            }
+
+            // 式モードかカラーバーモードか
+            if ( drawModeExp ) {
+            	// 式モード
+                red   = mf->GetUCharValue( ecalc_get_tree_value( tok_r, vars, 0 ) );
+                green = mf->GetUCharValue( ecalc_get_tree_value( tok_g, vars, 0 ) );
+                blue  = mf->GetUCharValue( ecalc_get_tree_value( tok_b, vars, 0 ) );
+            } else {
+            	// カラーバーモード
+                cmap->evalExpression( vars, 0 );
+                cmap->makeColor();
+
+                red   = mf->GetUCharValue( cmap->getR() );
+                green = mf->GetUCharValue( cmap->getG() );
+                blue  = mf->GetUCharValue( cmap->getB() );
+            }
+
+            // バッファに保存
+            rgb = (RGBTRIPLE *)buf;
+
+            // 行を作る
+            for ( k = 0; k < blockSize; k++ ) {
+                rgb[j * blockSize + k].rgbtBlue  = blue;
+                rgb[j * blockSize + k].rgbtGreen = green;
+                rgb[j * blockSize + k].rgbtRed   = red;
+            }
+        }
+
+        // 行blockSize分描画ループ
+        for ( j = 0; j < blockSize; j++ ) {
+            /* 画像書き出し */
+            ebmp_write_line( &ebmp, j + draw_y + i * blockSize, buf, ebmp.line_size );
+        }
+
+        // UI処理
+
+        /* プログレス */
+        SaveProgressBar->Position = i;
+
+        /* 時間計測 */
+        now = GetTickCount();
+
+        if ( i % 10 == 0 && i ) {
+            stime.sprintf( "処理時間 : %d秒 / %d秒", ( now - start ) / 1000, (int)( ( now - start ) * ( (float)img_read_yc / i ) / 1000 ) );
+            TimeLabel->Caption = stime;
+
+            Application->ProcessMessages();
+        }
+
+        // 脱出処理
+        if ( !saving ) {
+            break;
+        }
+    }
+
+    // バッファ解放
     free( buf );
+
+    /* BMPファイル閉じる */
+    ebmp_create_file_close( &ebmp );
 
     mf->b_drawing = false;
 

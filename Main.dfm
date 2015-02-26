@@ -744,6 +744,7 @@ object SatViewMainForm: TSatViewMainForm
         Width = 609
         Height = 526
         Align = alClient
+        OnDblClick = SatImageDblClick
         OnMouseDown = SatImageMouseDown
         OnMouseMove = SatImageMouseMove
         OnMouseUp = SatImageMouseUp
