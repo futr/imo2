@@ -1,3 +1,8 @@
+#include <vcl.h>
+#include <Jpeg.hpp>
+
+#pragma hdrstop
+
 #include "ColorBar.h"
 #include "SaveFormUnit.h"
 #include "PresetLS_THM.h"
@@ -5,16 +10,7 @@
 #include "PresetNDVI.h"
 #include "About.h"
 #include "PixValue.h"
-
-/* Canvasモードの排他処理が適当 */
-/* b_canvasで一応排他処理をしているが、一応なのでちゃんと作るときは書き換える */
-
 #include "Status.h"
-//---------------------------------------------------------------------------
-
-#include <vcl.h>
-#include <Jpeg.hpp>
-#pragma hdrstop
 
 #include "Main.h"
 
@@ -533,7 +529,7 @@ void __fastcall TSatViewMainForm::DrawImg( TImage *screen, Graphics::TBitmap *ba
             /* 色作成 */
             for ( k = 0; k < list_band->Count; k++ ) {
             	/* バンド取得 */
-                band = (struct REMOS_FRONT_BAND *)(list_band->Items[k]);
+                band = (struct REMOS_FRONT_BAND *)(list_band->Items[k]);     
 
                 /* 値登録 */
                 if ( band->canvas_mode ) {
@@ -739,6 +735,11 @@ void __fastcall TSatViewMainForm::SatImageMouseDown(TObject *Sender,
     	return;
     }
 
+    // ダブルクリックなら何もしない
+    if ( Shift.Contains( ssDouble ) ) {
+        return;
+    }
+
 	/* 左ボタン */
     if ( Button == mbLeft ) {
         cp_x = X;
@@ -846,6 +847,11 @@ void __fastcall TSatViewMainForm::SatImageMouseDown(TObject *Sender,
 void __fastcall TSatViewMainForm::SatImageMouseUp(TObject *Sender,
       TMouseButton Button, TShiftState Shift, int X, int Y)
 {
+    // ダブルクリックなら何もしない
+    if ( Shift.Contains( ssDouble ) ) {
+        return;
+    }
+
     if ( b_click ) {
     	// 距離測定モードならなにもしない
         if ( b_mode_length ) {
@@ -854,6 +860,13 @@ void __fastcall TSatViewMainForm::SatImageMouseUp(TObject *Sender,
         	b_click = false;
 
         	return;
+        }
+
+        // 移動してなければ書かない
+        if ( !b_move ) {
+            b_click = false;
+
+            return;
         }
 
         // カラーバースタンプモードなら描画してバッファへコピー
@@ -1958,9 +1971,7 @@ void __fastcall TSatViewMainForm::AutoBtnClick(TObject *Sender)
 void __fastcall TSatViewMainForm::ZoomImageMouseMove(TObject *Sender,
       TShiftState Shift, int X, int Y)
 {
-	TPoint points[3];
     int skip;
-    int zoom_change;
     double zoom_mag;
 
     /* 簡易拡大 */
@@ -1987,7 +1998,7 @@ void __fastcall TSatViewMainForm::ZoomImageMouseMove(TObject *Sender,
 
     skip = ( ZoomImage->Height - 30 ) / ZOOM_MAX;
 
-    /* ズーム調整 */
+    /* ズーム位置更新 */
     zoom_pos = ( Y - 15.0 + skip / 2 ) / ( ZoomImage->Height - 30 ) * ZOOM_MAX;
 
     if ( zoom_pos < 0 ) {
@@ -1996,19 +2007,27 @@ void __fastcall TSatViewMainForm::ZoomImageMouseMove(TObject *Sender,
     	zoom_pos = ZOOM_MAX;
     }
 
-    /* 倍率設定 */
-    // mag = ZoomPosToMag( zoom_pos );
-
     /* 描画 */
     DrawZoomBox( X, Y );
 
-    zoom_change = zoom_pos - zoom_pos_click + ZOOM_MAX / 2;
+    // 推定描画
+    DrawZoomEstimate( zoom_pos, zoom_pos_click, 0, 0 );
+}
+//---------------------------------------------------------------------------
+void TSatViewMainForm::DrawZoomEstimate( int new_zoom_pos, int old_zoom_pos, int sx, int sy )
+{
+    // ズーム後の推定画像を表示
+    // sx,yでズーム後の画像のシフト量指定
+    int zoom_change;
+    double zoom_mag;
+
+    zoom_change = new_zoom_pos - old_zoom_pos + ZOOM_MAX / 2;
 
     /* 変更後の倍率 */
     zoom_mag = ZoomPosToMag( zoom_change );
 
     /* 必要なら描画 */
-    if ( zoom_pos_bef != zoom_pos ) {
+    if ( old_zoom_pos != new_zoom_pos ) {
         // img_backに保存されてる画像から拡大・縮小画像を生成
     	SatImage->Canvas->Brush->Color = clWhite;
 
@@ -2017,18 +2036,18 @@ void __fastcall TSatViewMainForm::ZoomImageMouseMove(TObject *Sender,
             // 拡大
             SatImage->Canvas->CopyRect( Rect( 0, 0, SatImage->Width, SatImage->Height ),
                 img_back->Canvas,
-                Rect( SatImage->Width / 2 - SatImage->Width / 2 / zoom_mag,
-                    SatImage->Height / 2 - SatImage->Height / 2 / zoom_mag,
-                    SatImage->Width / 2 + SatImage->Width / 2 / zoom_mag,
-                    SatImage->Height / 2 + SatImage->Height / 2 / zoom_mag ) );
+                Rect( SatImage->Width / 2 - SatImage->Width / 2 / zoom_mag - sx / zoom_mag,
+                    SatImage->Height / 2 - SatImage->Height / 2 / zoom_mag - sy / zoom_mag,
+                    SatImage->Width / 2 + SatImage->Width / 2 / zoom_mag   - sx / zoom_mag,
+                    SatImage->Height / 2 + SatImage->Height / 2 / zoom_mag - sy / zoom_mag ) );
         } else {
             // 縮小
             // クリア
             SatImage->Canvas->FillRect( Rect( 0, 0, SatImage->Width, SatImage->Height ) );
-            SatImage->Canvas->StretchDraw( Rect( SatImage->Width / 2 - SatImage->Width / 2 * zoom_mag,
-                    SatImage->Height / 2 - SatImage->Height / 2 * zoom_mag,
-                    SatImage->Width / 2 + SatImage->Width / 2 * zoom_mag,
-                    SatImage->Height / 2 + SatImage->Height / 2 * zoom_mag ),
+            SatImage->Canvas->StretchDraw( Rect( SatImage->Width / 2 - SatImage->Width / 2 * zoom_mag - sx * zoom_mag,
+                    SatImage->Height / 2 - SatImage->Height / 2 * zoom_mag - sy * zoom_mag,
+                    SatImage->Width / 2 + SatImage->Width / 2 * zoom_mag - sx * zoom_mag,
+                    SatImage->Height / 2 + SatImage->Height / 2 * zoom_mag - sy * zoom_mag ),
                 img_back );
         }
 
@@ -2038,9 +2057,8 @@ void __fastcall TSatViewMainForm::ZoomImageMouseMove(TObject *Sender,
         SatImage->Canvas->TextOutA( 10, 10, "描画中" );
     }
 
-    /* ズーム位置保存 */
-    zoom_pos_bef = zoom_pos;
-
+    // 強制描画
+    Application->ProcessMessages();
 }
 //---------------------------------------------------------------------------
 void __fastcall TSatViewMainForm::DrawZoomBox( int X, int Y )
@@ -2135,7 +2153,6 @@ void __fastcall TSatViewMainForm::ZoomImageMouseDown(TObject *Sender,
     	b_zoom_click = true;
 
         zoom_pos_click = zoom_pos;
-        zoom_pos_bef   = zoom_pos;
 
         /* バッファ初期化 */
     	img_back->Width  = SatImage->Width;
@@ -2325,6 +2342,8 @@ void __fastcall TSatViewMainForm::MI_V_STATUSClick(TObject *Sender)
 void TSatViewMainForm::ZoomUp( bool draw )
 {
 	/* ズームアップ */
+    int old_zoom_pos = zoom_pos;
+
     zoom_pos--;
 
     if ( zoom_pos < 0 ) {
@@ -2342,13 +2361,19 @@ void TSatViewMainForm::ZoomUp( bool draw )
     }
     */
 
-    /* Zoom同期外した */
-	if ( draw ) DrawImg();
+	if ( draw ) {
+        // 推定画像描画
+        DrawZoomEstimate( zoom_pos, old_zoom_pos, 0, 0 );
+
+        DrawImg();
+    }
 }
 //---------------------------------------------------------------------------
 void TSatViewMainForm::ZoomDown( bool draw )
 {
 	/* ズームダウン */
+    int old_zoom_pos = zoom_pos;
+
     zoom_pos++;
 
     if ( zoom_pos > ZOOM_MAX ) {
@@ -2366,8 +2391,12 @@ void TSatViewMainForm::ZoomDown( bool draw )
     }
     */
 
-    /* Zoom同期外した */
-	if ( draw ) DrawImg();
+	if ( draw ) {
+        // 推定画像描画
+        DrawZoomEstimate( zoom_pos, old_zoom_pos, 0, 0 );
+
+        DrawImg();
+    }
 }
 //---------------------------------------------------------------------------
 void __fastcall TSatViewMainForm::ZoomUpImageMouseUp(TObject *Sender,
@@ -4012,6 +4041,10 @@ void __fastcall TSatViewMainForm::SatImageDblClick(TObject *Sender)
         next_zoom_pos = 0;
     }
 
+    if ( next_zoom_pos > ZOOM_MAX ) {
+        next_zoom_pos = ZOOM_MAX;
+    }
+
     mag = ZoomPosToMag( next_zoom_pos );
 
     // 拡大後の中心座標との距離
@@ -4026,8 +4059,14 @@ void __fastcall TSatViewMainForm::SatImageDblClick(TObject *Sender)
     ScrImgVert->Position = next_img_c_y;
     ScrImgHor->Position  = next_img_c_x;
 
+    // 推定描画
+    DrawZoomEstimate( next_zoom_pos, zoom_pos, -( cp_x - SatImage->Width / 2 ), -( cp_y - SatImage->Height / 2 ) );
+
     // 描画
-    ZoomUp();
+    ZoomUp( false );
+
+    // 描画
+    DrawImg();
 }
 //---------------------------------------------------------------------------
 

@@ -37,7 +37,7 @@
     <MAINSOURCE value="Imo10.cpp"/>
     <INCLUDEPATH value="libtiff;$(BCB)\include;$(BCB)\include\vcl"/>
     <LIBPATH value="libtiff;$(BCB)\Projects\Lib;$(BCB)\lib\obj;$(BCB)\lib"/>
-    <WARNINGS value="-w-par -wdef"/>
+    <WARNINGS value="-w-par -w-8027 -wdef"/>
     <OTHERFILES value=""/>
   </MACROS>
   <OPTIONS>
@@ -89,9 +89,9 @@
 IncludeVerInfo=1
 AutoIncBuild=1
 MajorVer=1
-MinorVer=38
+MinorVer=39
 Release=0
-Build=22
+Build=2
 Debug=0
 PreRelease=0
 Special=0
@@ -103,7 +103,7 @@ CodePage=932
 [Version Info Keys]
 CompanyName=
 FileDescription=
-FileVersion=1.38.0.22
+FileVersion=1.39.0.2
 InternalName=
 LegalCopyright=Masato Takahashi
 LegalTrademarks=

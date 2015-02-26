@@ -428,6 +428,7 @@ public:
     void ScrnPosToImgPos( int x, int y, int *img_x, int *img_y );
     void ZoomUp( bool draw = true );
     void ZoomDown( bool draw = true );
+    void DrawZoomEstimate( int new_zoom_pos, int old_zoom_pos, int cx, int cy );
 
     void syncPos();
 
