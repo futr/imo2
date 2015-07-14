@@ -25,20 +25,20 @@ WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		Application->Initialize();
 		Application->Title = "SatelliteEye";
 		Application->CreateForm(__classid(TSatViewMainForm), &SatViewMainForm);
-		Application->CreateForm(__classid(TStatusForm), &StatusForm);
-		Application->CreateForm(__classid(TPixForm), &PixForm);
-		Application->CreateForm(__classid(TAboutForm), &AboutForm);
-		Application->CreateForm(__classid(TPresetFormNDVI), &PresetFormNDVI);
-		Application->CreateForm(__classid(TPresetFormTHM), &PresetFormTHM);
-		Application->CreateForm(__classid(TPresetFormLS_THM), &PresetFormLS_THM);
-		Application->CreateForm(__classid(THelpForm), &HelpForm);
-		Application->CreateForm(__classid(TSaveForm), &SaveForm);
-		Application->CreateForm(__classid(TColorBarForm), &ColorBarForm);
-		Application->CreateForm(__classid(TColorBarConfigForm), &ColorBarConfigForm);
-		Application->CreateForm(__classid(TColorMapConfigForm), &ColorMapConfigForm);
-		Application->CreateForm(__classid(TPresetFormAGDEM), &PresetFormAGDEM);
-		Application->CreateForm(__classid(TPresetFormLS8_THM), &PresetFormLS8_THM);
-		Application->Run();
+         Application->CreateForm(__classid(TStatusForm), &StatusForm);
+         Application->CreateForm(__classid(TPixForm), &PixForm);
+         Application->CreateForm(__classid(TAboutForm), &AboutForm);
+         Application->CreateForm(__classid(TPresetFormNDVI), &PresetFormNDVI);
+         Application->CreateForm(__classid(TPresetFormTHM), &PresetFormTHM);
+         Application->CreateForm(__classid(TPresetFormLS_THM), &PresetFormLS_THM);
+         Application->CreateForm(__classid(THelpForm), &HelpForm);
+         Application->CreateForm(__classid(TSaveForm), &SaveForm);
+         Application->CreateForm(__classid(TColorBarForm), &ColorBarForm);
+         Application->CreateForm(__classid(TColorBarConfigForm), &ColorBarConfigForm);
+         Application->CreateForm(__classid(TColorMapConfigForm), &ColorMapConfigForm);
+         Application->CreateForm(__classid(TPresetFormAGDEM), &PresetFormAGDEM);
+         Application->CreateForm(__classid(TPresetFormLS8_THM), &PresetFormLS8_THM);
+         Application->Run();
 	}
 	catch (Exception &exception)
 	{

@@ -9,7 +9,7 @@
       HelpFormCode.obj SaveFormUnit.obj ebmp.obj ColorBar.obj 
       ColorBarConfigUnit.obj colormap.obj ColorMapConfigUnit.obj 
       PresetFormAGDEMUnit.obj geotiffrec.obj remos_alos_config.obj 
-      PresetLS8_THM.obj"/>
+      PresetLS8_THM.obj ecalc_jit.obj"/>
     <RESFILES value="Imo10.res"/>
     <DEFFILE value=""/>
     <RESDEPEN value="$(RESFILES) Main.dfm Status.dfm PixValue.dfm About.dfm PresetNDVI.dfm 
@@ -80,6 +80,7 @@
       <FILE FILENAME="geotiffrec.cpp" FORMNAME="" UNITNAME="geotiffrec" CONTAINERID="C/C++ コンパイラ" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="remos_alos_config.cpp" FORMNAME="" UNITNAME="remos_alos_config" CONTAINERID="C/C++ コンパイラ" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="PresetLS8_THM.cpp" FORMNAME="PresetFormLS8_THM" UNITNAME="PresetLS8_THM" CONTAINERID="C/C++ コンパイラ" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="ecalc_jit.c" FORMNAME="" UNITNAME="ecalc_jit" CONTAINERID="C/C++ コンパイラ" DESIGNCLASS="" LOCALCOMMAND=""/>
   </FILELIST>
   <BUILDTOOLS>
   </BUILDTOOLS>
@@ -89,9 +90,9 @@
 IncludeVerInfo=1
 AutoIncBuild=1
 MajorVer=1
-MinorVer=39
+MinorVer=40
 Release=0
-Build=2
+Build=4
 Debug=0
 PreRelease=0
 Special=0
@@ -103,7 +104,7 @@ CodePage=932
 [Version Info Keys]
 CompanyName=
 FileDescription=
-FileVersion=1.39.0.2
+FileVersion=1.40.0.4
 InternalName=
 LegalCopyright=Masato Takahashi
 LegalTrademarks=

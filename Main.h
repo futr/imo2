@@ -12,6 +12,7 @@
 #include <ToolWin.hpp>
 //---------------------------------------------------------------------------
 #include "ecalc.h"
+#include "ecalc_jit.h"
 #include "remos.h"
 #include "colormap.h"
 #include "geotiffrec.h"
@@ -275,6 +276,7 @@ __published:	// IDE 管理のコンポーネント
 	void __fastcall MI_C_LS8_THMClick(TObject *Sender);
     void __fastcall SatImageDblClick(TObject *Sender);
 private:	// ユーザー宣言
+    void __fastcall UpdateTimerEvent(TObject *Sender);
 public:
 	TList *list_file;				// ファイル用リスト
     TList *list_band;				// バンド用リスト
@@ -287,6 +289,15 @@ public:
     struct ECALC_TOKEN *tok_g;
     struct ECALC_TOKEN *tok_b;
     struct ECALC_TOKEN *tok_color_bar;
+
+    // 電卓JIT
+    ECALC_JIT_TREE *jit_r;
+    ECALC_JIT_TREE *jit_g;
+    ECALC_JIT_TREE *jit_b;
+    ECALC_JIT_TREE *jit_color_bar;
+
+    // 画面更新タイマー
+    TTimer *updateTimer;
 
     AnsiString color_bar_exp;
 
@@ -344,6 +355,7 @@ public:
     int cp_y;
 
     int zoom_pos;
+    int last_zoom_pos;              // 本番描画に使われた最後のズーム位置
     int zoom_pos_click;
     int zoom_pos_bef;
 
@@ -462,6 +474,7 @@ public:		// ユーザー宣言
 
 
     /* 描画 */
+    void WaitAndDraw( void );
     void __fastcall DrawImg( void );
     void __fastcall DrawImg( TImage *screen, Graphics::TBitmap *back_screen, bool drawModeExp, int zoompos, int img_cent_x, int img_cent_y, ColorMap *cmap );
 };

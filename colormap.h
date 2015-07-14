@@ -4,6 +4,7 @@
 #include <vcl.h>
 
 #include "ecalc.h"
+#include "ecalc_jit.h"
 
 class ColorLevel {
 public:
@@ -72,6 +73,7 @@ private:
     TList *levels;
 
     struct ECALC_TOKEN *tok_exp;
+    ECALC_JIT_TREE *jit;
 
 	AnsiString exp;
     AnsiString unit_str;

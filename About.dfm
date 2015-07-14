@@ -4,7 +4,7 @@ object AboutForm: TAboutForm
   BorderStyle = bsDialog
   Caption = #12496#12540#12472#12519#12531#24773#22577
   ClientHeight = 342
-  ClientWidth = 364
+  ClientWidth = 368
   Color = clBtnFace
   Font.Charset = SHIFTJIS_CHARSET
   Font.Color = clWindowText
@@ -20,7 +20,7 @@ object AboutForm: TAboutForm
     Top = 12
     Width = 85
     Height = 12
-    Caption = 'SatelliteEye 1.39'
+    Caption = 'SatelliteEye 1.40'
   end
   object Label2: TLabel
     Left = 84
@@ -174,9 +174,9 @@ object AboutForm: TAboutForm
   object Label3: TLabel
     Left = 96
     Top = 68
-    Width = 53
+    Width = 85
     Height = 12
-    Caption = 'ecalc.c 1.4'
+    Caption = 'ecalc.c jit'#23550#24540#29256
   end
   object Label4: TLabel
     Left = 96
@@ -195,9 +195,9 @@ object AboutForm: TAboutForm
   object Label6: TLabel
     Left = 84
     Top = 48
-    Width = 93
+    Width = 148
     Height = 12
-    Caption = 'ilce.ma@gmail.com'
+    Caption = 'https://github.com/futr/imo2'
   end
   object Label7: TLabel
     Left = 76

@@ -65,6 +65,7 @@ ColorMap::ColorMap()
 
     // 式初期化
     tok_exp = NULL;
+    jit = NULL;
 
     // 式の初期値
     setExpression( "a" );
@@ -81,8 +82,9 @@ ColorMap::~ColorMap()
         delete (ColorLevel *)getColorLevel( i );
     }
 
-    // トークン削除
+    // 式削除
     ecalc_free_token( tok_exp );
+    ecalc_free_jit_tree( jit );
 
     delete levels;
 }
@@ -96,6 +98,10 @@ void ColorMap::setExpression(AnsiString exp)
     ecalc_free_token( tok_exp );
     tok_exp = ecalc_make_token( exp.c_str() );
     tok_exp = ecalc_make_tree( tok_exp );
+
+    // JIT作成
+    ecalc_free_jit_tree( jit );
+    jit = ecalc_create_jit_tree( tok_exp );
 }
 
 
@@ -104,7 +110,10 @@ void ColorMap::evalExpression(double **args, double ans)
     // 式を評価して色を決定
 
     // 式評価
-    value = ecalc_get_tree_value( tok_exp, args, ans );
+    // value = ecalc_get_tree_value( tok_exp, args, ans );
+
+    // JITで評価
+    value = ecalc_get_jit_tree_value( jit, args, ans );
 }
 
 
@@ -525,6 +534,13 @@ ColorMap &ColorMap::operator =( const ColorMap &r_cm )
 
     // すべてのメモリをクリア
     deleteAllColorLevel();
+
+    // 式破棄
+    ecalc_free_token( tok_exp );
+    ecalc_free_jit_tree( jit );
+
+    tok_exp = NULL;
+    jit = NULL;
 
     // レベルをコピー
     for ( int i = 0; i < r_cm.getColorLevelCount(); i++ ) {

@@ -82,6 +82,9 @@ bool __fastcall TSaveForm::SaveToBmp( AnsiString filename, int zpos )
     struct ECALC_TOKEN *tok_r;
     struct ECALC_TOKEN *tok_g;
     struct ECALC_TOKEN *tok_b;
+    ECALC_JIT_TREE *jit_r;
+    ECALC_JIT_TREE *jit_g;
+    ECALC_JIT_TREE *jit_b;
 
     int zoom_pos;
     AnsiString stime;
@@ -123,6 +126,9 @@ bool __fastcall TSaveForm::SaveToBmp( AnsiString filename, int zpos )
     tok_r = NULL;
     tok_b = NULL;
     tok_g = NULL;
+    jit_r = NULL;
+    jit_g = NULL;
+    jit_b = NULL;
 
     /* 開いてなければ実行しない */
     if ( !mf->b_open ) {
@@ -162,6 +168,16 @@ bool __fastcall TSaveForm::SaveToBmp( AnsiString filename, int zpos )
 	ecalc_free_token( tok_r );
     tok_r = ecalc_make_token( mf->ExpEditR->Text.c_str() );
 	tok_r = ecalc_make_tree( tok_r );
+
+    // 式JIT確保
+    ecalc_free_jit_tree( jit_r );
+    jit_r = ecalc_create_jit_tree( tok_r );
+
+    ecalc_free_jit_tree( jit_g );
+    jit_r = ecalc_create_jit_tree( tok_g );
+
+    ecalc_free_jit_tree( jit_b );
+    jit_r = ecalc_create_jit_tree( tok_b );
 
     /* 座標計算 */
     draw_x = 0;
@@ -231,9 +247,15 @@ bool __fastcall TSaveForm::SaveToBmp( AnsiString filename, int zpos )
             // 式モードかカラーバーモードか
             if ( drawModeExp ) {
             	// 式モード
+                /*
                 red   = mf->GetUCharValue( ecalc_get_tree_value( tok_r, vars, 0 ) );
                 green = mf->GetUCharValue( ecalc_get_tree_value( tok_g, vars, 0 ) );
                 blue  = mf->GetUCharValue( ecalc_get_tree_value( tok_b, vars, 0 ) );
+                */
+                // JITで式モード評価
+                red   = mf->GetUCharValue( ecalc_get_jit_tree_value( jit_r, vars, 0 ) );
+                green = mf->GetUCharValue( ecalc_get_jit_tree_value( jit_g, vars, 0 ) );
+                blue  = mf->GetUCharValue( ecalc_get_jit_tree_value( jit_b, vars, 0 ) );
             } else {
             	// カラーバーモード
                 cmap->evalExpression( vars, 0 );
@@ -287,6 +309,14 @@ bool __fastcall TSaveForm::SaveToBmp( AnsiString filename, int zpos )
 
     /* BMPファイル閉じる */
     ebmp_create_file_close( &ebmp );
+
+    // 式後処理
+    ecalc_free_token( tok_r );
+    ecalc_free_token( tok_g );
+    ecalc_free_token( tok_b );
+    ecalc_free_jit_tree( jit_r );
+    ecalc_free_jit_tree( jit_g );
+    ecalc_free_jit_tree( jit_b );
 
     mf->b_drawing = false;
 

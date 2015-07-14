@@ -67,6 +67,10 @@ __fastcall TSatViewMainForm::TSatViewMainForm(TComponent* Owner)
     tok_g = NULL;
     tok_b = NULL;
     tok_color_bar = NULL;
+    jit_r = NULL;
+    jit_g = NULL;
+    jit_b = NULL;
+    jit_color_bar = NULL;
 
     color_bar_exp = "a";
 
@@ -74,6 +78,7 @@ __fastcall TSatViewMainForm::TSatViewMainForm(TComponent* Owner)
     img_h = 1;
 
     zoom_pos = ZOOM_MAX / 2;
+    last_zoom_pos = zoom_pos;
 
 	/* メモリマネージャ初期化 */
 	ecalc_memman_init();
@@ -111,6 +116,21 @@ __fastcall TSatViewMainForm::TSatViewMainForm(TComponent* Owner)
     color_map->addColorLevel( new ColorLevel(   0,   0,   0,   0 ) );
     color_map->addColorLevel( new ColorLevel( 255, 255, 255, 255 ) );
     color_map->setSmooth();
+
+    // 画面更新タイマーを作る
+    updateTimer = new TTimer( this );
+    updateTimer->Enabled = false;
+    updateTimer->Interval = 400;
+    updateTimer->OnTimer = UpdateTimerEvent;
+}
+//---------------------------------------------------------------------------
+void __fastcall TSatViewMainForm::UpdateTimerEvent(TObject *Sender)
+{
+    // 画面更新待ちタイマーのイベント
+    Application->ProcessMessages();
+    updateTimer->Enabled = false;
+
+    DrawImg();
 }
 //---------------------------------------------------------------------------
 void __fastcall TSatViewMainForm::FormClose(TObject *Sender, TCloseAction &Action)
@@ -141,6 +161,10 @@ void __fastcall TSatViewMainForm::FormClose(TObject *Sender, TCloseAction &Actio
     ecalc_free_token( tok_g );
     ecalc_free_token( tok_b );
     ecalc_free_token( tok_color_bar );
+    ecalc_free_jit_tree( jit_r );
+    ecalc_free_jit_tree( jit_g );
+    ecalc_free_jit_tree( jit_b );
+    ecalc_free_jit_tree( jit_color_bar );
 }
 //---------------------------------------------------------------------------
 void __fastcall TSatViewMainForm::ShowHint( TObject *sender )
@@ -432,6 +456,16 @@ void __fastcall TSatViewMainForm::DrawImg( TImage *screen, Graphics::TBitmap *ba
     tok_r = ecalc_make_token( ExpEditR->Text.c_str() );
 	tok_r = ecalc_make_tree( tok_r );
 
+    // 式JIT確保
+    ecalc_free_jit_tree( jit_r );
+    jit_r = ecalc_create_jit_tree( tok_r );
+
+    ecalc_free_jit_tree( jit_g );
+    jit_g = ecalc_create_jit_tree( tok_g );
+
+    ecalc_free_jit_tree( jit_b );
+    jit_b = ecalc_create_jit_tree( tok_b );
+
     /* スクリーンサイズ取得 */
     sc_w = screen->Width;
     sc_h = screen->Height;
@@ -450,6 +484,7 @@ void __fastcall TSatViewMainForm::DrawImg( TImage *screen, Graphics::TBitmap *ba
     /* 座標計算 */
 
     // 倍率取得とskip（読み込み飛ばし量）と画素ブロックサイズ決定
+    last_zoom_pos = zoompos;
     mag = ZoomPosToMag( zoompos );
 
     if ( mag >= 1 ) {
@@ -543,9 +578,15 @@ void __fastcall TSatViewMainForm::DrawImg( TImage *screen, Graphics::TBitmap *ba
             // 式モードかカラーバーモードか
             if ( drawModeExp ) {
             	// 式モード
+                /*
                 red   = GetUCharValue( ecalc_get_tree_value( tok_r, vars, 0 ) );
                 green = GetUCharValue( ecalc_get_tree_value( tok_g, vars, 0 ) );
                 blue  = GetUCharValue( ecalc_get_tree_value( tok_b, vars, 0 ) );
+                */
+                // JITで式モード評価
+                red   = GetUCharValue( ecalc_get_jit_tree_value( jit_r, vars, 0 ) );
+                green = GetUCharValue( ecalc_get_jit_tree_value( jit_g, vars, 0 ) );
+                blue  = GetUCharValue( ecalc_get_jit_tree_value( jit_b, vars, 0 ) );
             } else {
             	// カラーバーモード
                 cmap->evalExpression( vars, 0 );
@@ -1683,6 +1724,7 @@ void __fastcall TSatViewMainForm::ImageMouseWheelEvent( TObject *Sender, TShiftS
 	int WheelDelta, const TPoint &MousePos, bool &Handled )
 {
 	// Image用のホイールイベント
+    int old_zoom_pos = last_zoom_pos;
 
     // WheelDaltaの符号で向きを判断
     if ( WheelDelta >= 1 ) {
@@ -1694,7 +1736,11 @@ void __fastcall TSatViewMainForm::ImageMouseWheelEvent( TObject *Sender, TShiftS
     	}
 
     	DrawZoomBox( 0, 0 );
-		DrawImg();
+
+        // 推定画像描画
+        DrawZoomEstimate( zoom_pos, old_zoom_pos, 0, 0 );
+
+		WaitAndDraw();
     } else if ( WheelDelta <= -1 ) {
         // ズームダウン
         zoom_pos++;
@@ -1704,7 +1750,11 @@ void __fastcall TSatViewMainForm::ImageMouseWheelEvent( TObject *Sender, TShiftS
     	}
 
     	DrawZoomBox( 0, 0 );
-		DrawImg();
+
+        // 推定画像描画
+        DrawZoomEstimate( zoom_pos, old_zoom_pos, 0, 0 );
+
+		WaitAndDraw();
     }
 
     // 処理した
@@ -1786,7 +1836,6 @@ void __fastcall TSatViewMainForm::ExpEditRChange(TObject *Sender)
     }
 }
 //---------------------------------------------------------------------------
-
 void __fastcall TSatViewMainForm::ExpEditBChange(TObject *Sender)
 {
 	/* メモリ解放 */
@@ -2342,7 +2391,7 @@ void __fastcall TSatViewMainForm::MI_V_STATUSClick(TObject *Sender)
 void TSatViewMainForm::ZoomUp( bool draw )
 {
 	/* ズームアップ */
-    int old_zoom_pos = zoom_pos;
+    int old_zoom_pos = last_zoom_pos;
 
     zoom_pos--;
 
@@ -2365,14 +2414,15 @@ void TSatViewMainForm::ZoomUp( bool draw )
         // 推定画像描画
         DrawZoomEstimate( zoom_pos, old_zoom_pos, 0, 0 );
 
-        DrawImg();
+        //DrawImg();
+        WaitAndDraw();
     }
 }
 //---------------------------------------------------------------------------
 void TSatViewMainForm::ZoomDown( bool draw )
 {
 	/* ズームダウン */
-    int old_zoom_pos = zoom_pos;
+    int old_zoom_pos = last_zoom_pos;
 
     zoom_pos++;
 
@@ -2395,8 +2445,16 @@ void TSatViewMainForm::ZoomDown( bool draw )
         // 推定画像描画
         DrawZoomEstimate( zoom_pos, old_zoom_pos, 0, 0 );
 
-        DrawImg();
+        //DrawImg();
+        WaitAndDraw();
     }
+}
+//---------------------------------------------------------------------------
+void TSatViewMainForm::WaitAndDraw( void )
+{
+    // 描画まちタイマーを再起動して描画予約
+    updateTimer->Enabled = false;
+    updateTimer->Enabled = true;
 }
 //---------------------------------------------------------------------------
 void __fastcall TSatViewMainForm::ZoomUpImageMouseUp(TObject *Sender,
@@ -3838,9 +3896,6 @@ void __fastcall TSatViewMainForm::TBStampClick(TObject *Sender)
     }
 }
 //---------------------------------------------------------------------------
-
-
-
 void __fastcall TSatViewMainForm::ExpDrawRadioButtonClick(TObject *Sender)
 {
 	// 式描画モード
@@ -3862,7 +3917,6 @@ void __fastcall TSatViewMainForm::ExpDrawRadioButtonClick(TObject *Sender)
     DrawImg();
 }
 //---------------------------------------------------------------------------
-
 void __fastcall TSatViewMainForm::LevelDrawRadioButtonClick(
       TObject *Sender)
 {
@@ -4069,5 +4123,6 @@ void __fastcall TSatViewMainForm::SatImageDblClick(TObject *Sender)
     DrawImg();
 }
 //---------------------------------------------------------------------------
+
 
 

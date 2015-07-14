@@ -4,6 +4,8 @@
 #define SaveFormUnitH
 //---------------------------------------------------------------------------
 #include "ebmp.h"
+#include "ecalc.h"
+#include "ecalc_jit.h"
 #include "Main.h"
 #include <math.h>
 #include <Math.hpp>
