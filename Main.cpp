@@ -2004,8 +2004,9 @@ void __fastcall TSatViewMainForm::AutoBtnClick(TObject *Sender)
 
     /* ƒI[ƒgƒŒƒ“ƒW“K—p */
     if ( AutoRangeCheckBox->Checked ) {
-    	/* ã‰º‚ğœ‚­ */
-        remos_calc_auto_range( box->band, range, 1 );
+    	/* ã‰º‚ğœ‚­ ( 256’iŠKˆÈã‚Ì‰æ‘œ‚É‚à‘Î‰‚·‚é‚½‚ß‚Æ‚è‚ ‚¦‚¸2‚Í‚¸‚· ) */
+        // ‚ ‚Ü‚è‚É‚à‘åG”c‚·‚¬‚é‚Ì‚Å©“®ˆ—‚Íì‚è‚È‚¨‚·‚×‚« TODO
+        remos_calc_auto_range( box->band, range, 2 );
     } else {
     	/* ‚Ì‚¼‚©‚È‚¢ */
     	remos_calc_auto_range( box->band, range, 0 );

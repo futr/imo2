@@ -77,6 +77,7 @@ int remos_check_file_type( struct REMOS_FILE_CONTAINER *cont )
 	/* ファイルタイプを調べる */
 	char buf[64];
 	char str_buf[32];
+	HSD_INFO hsd;
 	
 	/* 先頭の63バイトを読んでみる */
 	fread( buf, 1, 63, cont->fp );
@@ -122,6 +123,11 @@ int remos_check_file_type( struct REMOS_FILE_CONTAINER *cont )
 		return REMOS_FILE_TYPE_TIFF;
 	}
 	
+	// ひまわりHSD
+	if ( hsd_read_file( &hsd, cont->file_name ) == HSD_Succeeded ) {
+        return REMOS_FILE_TYPE_HSD;
+    }
+	
 	/* 分からなかった */
 	return REMOS_FILE_TYPE_UNKNOWN;
 }
@@ -131,6 +137,7 @@ int remos_read_file( struct REMOS_FILE_CONTAINER *cont )
 	/* 指定されたcont->typeに従って、ファイル読み込み */
 	struct TIFREC_FILE_CONTAINER tr;
 	struct TIFREC_IFD *next;
+	HSD_INFO hsd;
 	unsigned char *buf;
 	unsigned char buf_short[2];
 	unsigned char buf_int[4];
@@ -531,6 +538,62 @@ int remos_read_file( struct REMOS_FILE_CONTAINER *cont )
 			cont->img_width  = cont->bands[0].line_img_width;
 
 			return REMOS_RET_SUCCEED;
+			
+		case REMOS_FILE_TYPE_HSD:
+		    // ひまわりHSDだった
+		    
+		    // hsdの情報読み込み
+		    if( hsd_read_file( &hsd, cont->file_name ) != HSD_Succeeded ) {
+                return REMOS_RET_FAILED;
+            }
+            
+            // 圧縮には対応しない
+            if ( hsd.compress != HSD_Plain ) {
+                return REMOS_RET_FAILED;
+            }
+            
+			/* コンテナを設定 */
+			cont->band_count = 1;
+			cont->bands      = malloc( sizeof(struct REMOS_BAND) );
+				
+			/* バンドに設定適用 */
+			cont->bands->band_count = 1;
+
+			cont->bands->color         = REMOS_BAND_COLOR_BW;
+			cont->bands->sample_format = REMOS_BAND_SAMPLE_FORMAT_UINT;
+			
+			if ( hsd.endian == HSD_LittleEndian ) {
+                cont->bands->endian = REMOS_ENDIAN_LITTLE;
+            } else {
+                cont->bands->endian = REMOS_ENDIAN_BIG;
+            }
+			
+			cont->bands->fp          = cont->fp;
+			cont->bands->band_num    = 0;
+			cont->bands->bits        = hsd.bitCount;
+            cont->bands->byte_per_sample = cont->bands->bits / 8;
+            cont->bands->sample_per_pix  = 1;
+			cont->bands->line_width  = hsd.columnCount * cont->bands->byte_per_sample;
+			cont->bands->line_count  = hsd.lineCount;
+			cont->bands->line_header = 0;
+			cont->bands->line_footer = 0;
+
+			cont->bands->line_img_width = hsd.columnCount;
+			
+			cont->bands->header       = hsd.headerSize;
+
+			cont->bands->range_top    = pow( 2, cont->bands->bits ) - 1;
+			cont->bands->range_bottom = 0;
+			cont->bands->range_max    = pow( 2, cont->bands->bits ) - 1;
+			cont->bands->range_min    = 0;
+
+            cont->bands->band_mode    = REMOS_BAND_MODE_BSQ;
+
+			/* コンテナに画像サイズを設定 */
+			cont->img_height = cont->bands->line_count;
+			cont->img_width  = cont->bands->line_img_width;
+
+			return REMOS_RET_SUCCEED;
 		
 		default:															/* 何も処理できなかった */
 			/* 何も処理できなかった */
@@ -807,6 +870,11 @@ void remos_calc_auto_range( struct REMOS_BAND *band, double per, int topbottom )
 			break;
 		}
 	}
+
+    // 上が下を下回っていたら、上=下
+    if ( band->range_bottom > band->range_top ) {
+        band->range_top = band->range_bottom;
+    }
 }
 
 float remos_get_pixel_value( struct REMOS_BAND *band, int pos )

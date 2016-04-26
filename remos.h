@@ -15,6 +15,7 @@
 #include <float.h>
 #include <string.h>
 #include "tifrec.h"
+#include "hsdinfo.h"
 
 #define REMOS_MAX_FILENAME			1024
 
@@ -33,6 +34,7 @@
 #define REMOS_FILE_TYPE_BIL_R10			6					/* いも天形式のBIL */
 #define REMOS_FILE_TYPE_BSQ_ALOS_PAL	7					/* ALOSのPAL */
 #define REMOS_FILE_TYPE_BSQ_ALOS_PAL_11 8					/* ALOSのPAL1.1 */
+#define REMOS_FILE_TYPE_HSD             9                   // ひまわりHSD
 
 #define REMOS_RET_FAILED			0						/* 失敗 */
 #define REMOS_RET_SUCCEED			1						/* 成功 */
@@ -81,7 +83,7 @@ struct REMOS_BAND {											/* バンド情報構造体 */
 	int line_count;											/* ライン数 */
 	int line_header;										/* ラインヘッダ */
 	int line_footer;										/* ラインフッター */
-	int line_img_width;										/* ライン内の画像幅 */
+	int line_img_width;										/* ライン内の画像幅 ( バイト幅ではない ) */
 
 	unsigned int hist[256];									/* ヒストグラム */
 	int hist_max;											/* ヒストグラム最大値 ( ヒストグラム内位置0-255 ) */
