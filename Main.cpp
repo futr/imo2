@@ -1011,12 +1011,14 @@ void __fastcall TSatViewMainForm::BandCloseBtnClick(TObject *Sender)
     	if ( fc_fln == fln ) {
     		remos_close( fc );
         	free( fc );
+
+            list_file->Delete( i );
+
+            /* DEBUG : CanvasモードだったらBitmap破棄 */
+            delete bmp;
+
+            break;
         }
-
-		list_file->Delete( i );
-
-        /* DEBUG : CanvasモードだったらBitmap破棄 */
-        delete bmp;
     }
 
     /* 全部閉じた */
@@ -1048,7 +1050,7 @@ void TSatViewMainForm::UpdateBandBox( struct REMOS_FRONT_BAND *box )
 
     /* 名前書きなおし */
     box->label_name->Caption = num;
-    box->label_name->Caption = box->label_name->Caption + " : " + *box->fln;
+    box->label_name->Caption = box->label_name->Caption + " : " + ExtractFileName( *box->fln );
     box->label_name->Caption = box->label_name->Caption + " - " + IntToStr( box->band->band_num );
 
     /* Canvasモードか、remosモードでもカラーなら色を書く */
@@ -3301,7 +3303,7 @@ void __fastcall TSatViewMainForm::OpenFiles( void )
                 }
 
                 /* バンドボックスを作る */
-                list_band->Add( MakeBandBox( &remos->bands[j], ExtractFileName( remos->file_name ), list_band->Count ) );
+                list_band->Add( MakeBandBox( &remos->bands[j], remos->file_name, list_band->Count ) );
 
                 box = (struct REMOS_FRONT_BAND *)list_band->Items[list_band->Count - 1];
 
@@ -3392,7 +3394,7 @@ void __fastcall TSatViewMainForm::OpenFiles( void )
                             }
                         }
 
-                        list_band->Add( MakeBandBox( &remos->bands[j], ExtractFileName( remos->file_name ), list_band->Count ) );
+                        list_band->Add( MakeBandBox( &remos->bands[j], remos->file_name, list_band->Count ) );
 
                         box = (struct REMOS_FRONT_BAND *)list_band->Items[list_band->Count - 1];
 
