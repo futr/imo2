@@ -17,12 +17,8 @@ __published:	// IDE 管理のコンポーネント
 	TLabel *Label1;
 	TLabel *Label2;
 	TImage *Image1;
-	TLabel *Label3;
-	TLabel *Label4;
-	TLabel *Label5;
 	TLabel *Label6;
 	TLabel *Label7;
-	TLabel *Label8;
 	TLabel *Label9;
 	TMemo *Memo1;
 	void __fastcall ButtonOkClick(TObject *Sender);

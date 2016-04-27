@@ -26,7 +26,7 @@ int remos_open( struct REMOS_FILE_CONTAINER *cont, char *filename, int type )
     cont->file_name[strlen( filename )] = '\0';
 
 	/* ファイルを開く */
-	if ( ( cont->fp = fopen( filename, "rb" ) ) == NULL ) {
+	if ( !remos_fopen( cont, filename ) ) {
 		/* 失敗 */
 		return REMOS_RET_FAILED;
 	}
@@ -62,7 +62,8 @@ int remos_close( struct REMOS_FILE_CONTAINER *cont )
 {
 	/* ファイルを閉じる */
 	
-	fclose( cont->fp );
+	// fclose( cont->fp );
+    remos_fclose( cont );
 	cont->fp = NULL;
 	
 	/* 確保されたバンドを解放 */
@@ -78,9 +79,9 @@ int remos_check_file_type( struct REMOS_FILE_CONTAINER *cont )
 	char buf[64];
 	char str_buf[32];
 	HSD_INFO hsd;
-	
+
 	/* 先頭の63バイトを読んでみる */
-	fread( buf, 1, 63, cont->fp );
+    remos_fread( cont, buf, 63 );
 	buf[63] = '\0';
 	
 	/* REMO10形式チェック */
@@ -102,13 +103,16 @@ int remos_check_file_type( struct REMOS_FILE_CONTAINER *cont )
 		/* PALか ( 雑 ) */
 		memcpy( str_buf, buf + 52, 4 );
 		str_buf[4] = '\0';
-		
-		if ( !strcmp( str_buf, "PSRC" ) || !strncmp( str_buf, "SAR", 3 ) ) {
+
+		if ( !strcmp( str_buf, "PSRC" ) || !strncmp( str_buf, "SARC", 4 ) ) {
 			/* PALSAR1.5だった */
 			return REMOS_FILE_TYPE_BSQ_ALOS_PAL;
 		} else if ( !strcmp( str_buf, "PSRB" ) ) {
 			/* PALSAR1.1だった */
 			return REMOS_FILE_TYPE_BSQ_ALOS_PAL_11;
+        } else if ( !strncmp( str_buf, "SARB", 4 ) ) {
+			/* PALSAR2 1.1だった */
+			return REMOS_FILE_TYPE_BSQ_ALOS_PAL2_11;
 		} else {
 			/* AV2かPRISMだった */
 			return REMOS_FILE_TYPE_BSQ_ALOS;
@@ -154,6 +158,7 @@ int remos_read_file( struct REMOS_FILE_CONTAINER *cont )
     int sample_format;
 
 	switch ( cont->type ) {
+        case REMOS_FILE_TYPE_BSQ_ALOS_PAL2_11:
 		case REMOS_FILE_TYPE_BSQ_ALOS_PAL_11:								/* ALOSのBSQだけどPALの1.1だった */
 			/* コンテナを設定 */
 			cont->band_count = 2;
@@ -163,8 +168,9 @@ int remos_read_file( struct REMOS_FILE_CONTAINER *cont )
             buf = malloc( 4 );
 
 			/* ヘッダ読み込み */
-			fseek( cont->fp, 8, SEEK_SET );
-			fread( buf, 1, 4, cont->fp );
+            remos_fseek( cont, 8, REMOS_FILE_MOVE_BEGIN );
+			// fread( buf, 1, 4, cont->fp );
+            remos_fread( cont, buf, 4 );
 
             /* ヘッダ決定 */
             header = remos_data_to_value( buf, 4, REMOS_ENDIAN_BIG );
@@ -176,8 +182,9 @@ int remos_read_file( struct REMOS_FILE_CONTAINER *cont )
 			buf = malloc( sizeof(struct REMOS_HEADER_LINE_ALOS_PAL) );
 
 			/* ヘッダ読み込み */
-			fseek( cont->fp, 180, SEEK_SET );
-			fread( buf, 1, sizeof(struct REMOS_HEADER_LINE_ALOS_PAL), cont->fp );
+            remos_fseek( cont, 180, REMOS_FILE_MOVE_BEGIN );
+			// fread( buf, 1, sizeof(struct REMOS_HEADER_LINE_ALOS_PAL), cont->fp );
+            remos_fread( cont, buf, sizeof(struct REMOS_HEADER_LINE_ALOS_PAL) );
 			
 			for ( i = 0; i < cont->band_count; i++ ) {
 				cont->bands[i].band_count  = 2;
@@ -207,6 +214,8 @@ int remos_read_file( struct REMOS_FILE_CONTAINER *cont )
 				cont->bands[i].range_min    = 0;
 
                 cont->bands[i].band_mode    = REMOS_BAND_MODE_PACK;
+
+                cont->bands[i].cont = cont;
 			}
 
 			/* コンテナに画像サイズを設定 */
@@ -228,8 +237,9 @@ int remos_read_file( struct REMOS_FILE_CONTAINER *cont )
             buf = malloc( 4 );
 
 			/* ヘッダ読み込み */
-			fseek( cont->fp, 8, SEEK_SET );
-			fread( buf, 1, 4, cont->fp );
+            remos_fseek( cont, 8, REMOS_FILE_MOVE_BEGIN );
+			// fread( buf, 1, 4, cont->fp );
+            remos_fread( cont, buf, 4 );
 
             /* ヘッダ決定 */
             header = remos_data_to_value( buf, 4, REMOS_ENDIAN_BIG );
@@ -243,8 +253,9 @@ int remos_read_file( struct REMOS_FILE_CONTAINER *cont )
 				buf = malloc( sizeof(struct REMOS_HEADER_LINE_ALOS_PAL) );
 
 				/* ヘッダ読み込み */
-				fseek( cont->fp, 180, SEEK_SET );
-				fread( buf, 1, sizeof(struct REMOS_HEADER_LINE_ALOS_PAL), cont->fp );
+                remos_fseek( cont, 180, REMOS_FILE_MOVE_BEGIN );
+				// fread( buf, 1, sizeof(struct REMOS_HEADER_LINE_ALOS_PAL), cont->fp );
+                remos_fread( cont, buf, sizeof(struct REMOS_HEADER_LINE_ALOS_PAL) );
 				
 				/* バンドに設定適用 PALSARではline_header部等の意味が異なるため正確でない */
 				cont->bands->band_count = 1;
@@ -265,8 +276,9 @@ int remos_read_file( struct REMOS_FILE_CONTAINER *cont )
 				buf = malloc( sizeof(struct REMOS_HEADER_LINE_ALOS) );
 
 				/* ヘッダ読み込み */
-				fseek( cont->fp, 180, SEEK_SET );
-				fread( buf, 1, sizeof(struct REMOS_HEADER_LINE_ALOS), cont->fp );
+                remos_fseek( cont, 180, REMOS_FILE_MOVE_BEGIN );
+				// fread( buf, 1, sizeof(struct REMOS_HEADER_LINE_ALOS), cont->fp );
+                remos_fread( cont, buf, sizeof(struct REMOS_HEADER_LINE_ALOS) );
 				
 				/* バンドに設定適用 PALSARではline_header部等の意味が異なるため正確でない */
 				cont->bands->band_count = 1;
@@ -298,6 +310,8 @@ int remos_read_file( struct REMOS_FILE_CONTAINER *cont )
 
             cont->bands->band_mode    = REMOS_BAND_MODE_BSQ;
 
+            cont->bands->cont = cont;
+
 			/* コンテナに画像サイズを設定 */
 			cont->img_height = cont->bands->line_count;
 			cont->img_width  = cont->bands->line_img_width;
@@ -312,8 +326,9 @@ int remos_read_file( struct REMOS_FILE_CONTAINER *cont )
 			buf = malloc( 512 );
 
 			/* バッファに読み込み */
-			fseek( cont->fp, 0, SEEK_SET );
-			fread( buf, 1, 512, cont->fp );
+            remos_fseek( cont, 0, REMOS_FILE_MOVE_BEGIN );
+			// fread( buf, 1, 512, cont->fp );
+            remos_fread( cont, buf, 512 );
 
 			/* コンテナに情報設定 */
 			cont->band_count = remos_BE2usint( buf + 0x56, 2 );				/* バンド数取得 */
@@ -351,6 +366,8 @@ int remos_read_file( struct REMOS_FILE_CONTAINER *cont )
 				cont->bands[i].range_min    = 0;
 
                 cont->bands[i].band_mode    = REMOS_BAND_MODE_BIL;
+
+                cont->bands[i].cont = cont;
 			}
 			
 			/* バッファを解放 */
@@ -531,6 +548,8 @@ int remos_read_file( struct REMOS_FILE_CONTAINER *cont )
 
                 // バンドモードは一応PACKを仮定
                 cont->bands[i].band_mode = REMOS_BAND_MODE_PACK;
+
+                cont->bands[i].cont = cont;
 			}
 			
 			/* コンテナに画像サイズを設定 */
@@ -588,6 +607,8 @@ int remos_read_file( struct REMOS_FILE_CONTAINER *cont )
 			cont->bands->range_min    = 0;
 
             cont->bands->band_mode    = REMOS_BAND_MODE_BSQ;
+
+            cont->bands->cont = cont;
 
 			/* コンテナに画像サイズを設定 */
 			cont->img_height = cont->bands->line_count;
@@ -937,7 +958,7 @@ float remos_data_to_value_format( unsigned char *data, int len, int endian, int 
 	int ret_i;
 	unsigned int ret_ui;
 	int i;
-	
+
 	/* 書き込み先ポインターを特定 */
 	switch ( format ) {
 		case REMOS_BAND_SAMPLE_FORMAT_INT:
@@ -953,7 +974,7 @@ float remos_data_to_value_format( unsigned char *data, int len, int endian, int 
 					ret_ptr = &ret_c;
 					break;
 			}
-			
+
 			break;
 
 		case REMOS_BAND_SAMPLE_FORMAT_UINT:
@@ -969,7 +990,7 @@ float remos_data_to_value_format( unsigned char *data, int len, int endian, int 
 					ret_ptr = &ret_uc;
 					break;
 			}
-			
+
 			break;
 
 		case REMOS_BAND_SAMPLE_FORMAT_IEEEFP:
@@ -979,14 +1000,14 @@ float remos_data_to_value_format( unsigned char *data, int len, int endian, int 
 					ret_ptr = &ret_f;
 					break;
 			}
-			
+
 			break;
-		
+
 		default:
 			ret_ptr = &ret_i;
 			break;
 	}
-	
+
 	/* エンディアンにしたがってデーターをコピー */
 	if ( endian == REMOS_ENDIAN_BIG ) {
 		for ( i = 0; i < len; i++ ) {
@@ -1099,8 +1120,10 @@ struct REMOS_BAND *remos_get_band( struct REMOS_FILE_CONTAINER *cont, int num )
 int remos_get_line_pixels( struct REMOS_BAND *band, unsigned char *buf, int line, int from, int count )
 {
 	/* 指定バンドのある行( 0スタート )のfrom( 0スタート )から、count個データを読む  */
-	int i;
-	int file_pos;
+	unsigned int i;
+	unsigned long long file_pos;
+    unsigned long long file_pos_large_shift_count;
+    unsigned long long file_pos_large;
 	unsigned int read_data_usint;
 	float read_data_float;
 	char *read_buf;
@@ -1127,19 +1150,38 @@ int remos_get_line_pixels( struct REMOS_BAND *band, unsigned char *buf, int line
     // バンドモードで処理を分岐
     if ( band->band_mode == REMOS_BAND_MODE_BIL ) {
         // BIL
-        file_pos = band->header + ( ( band->band_count * line + band->band_num ) * band->line_width ) + band->line_header + from * band->byte_per_sample * band->sample_per_pix;
+        file_pos = band->header + ( ( (unsigned long long)band->band_count * line + band->band_num ) * band->line_width ) + band->line_header + (unsigned long long)from * band->byte_per_sample * band->sample_per_pix;
     } else {
         // BSQ, PACK
-        file_pos = band->header + ( line * band->line_width ) + band->line_header + from * band->sample_per_pix * band->byte_per_sample;
+        file_pos = band->header + ( (unsigned long long)line * band->line_width ) + band->line_header + (unsigned long long)from * band->sample_per_pix * band->byte_per_sample;
     }
 
 	/* 初期位置へ */
-	fseek( band->fp, file_pos, SEEK_SET );
+    // 古いコンパイラーで巨大ファイルを扱えない
+    /*
+    file_pos_large_shift_count = file_pos / REMOS_MAX_32BIT;
+    file_pos_large = file_pos % REMOS_MAX_32BIT;
+
+    if ( file_pos_large_shift_count > 0 ) {
+        // 4Gを超えているファイル
+        fseek( band->fp, 0, SEEK_SET );
+
+        for ( i = 0; i < file_pos_large_shift_count; i++ ) {
+            fseek( band->fp, REMOS_MAX_32BIT, SEEK_CUR );
+        }
+
+        fseek( band->fp, file_pos_large, SEEK_CUR );
+    } else {
+        fseek( band->fp, file_pos, SEEK_SET );
+    }
+    */
+    remos_fseek( band->cont, file_pos, REMOS_FILE_MOVE_BEGIN );
 
     // バンドモードによって詰め込み
     if ( band->band_mode == REMOS_BAND_MODE_BIL || band->band_mode == REMOS_BAND_MODE_BSQ || band->band_count == 1 ) {
         // パックされていないBIL、BSQ、もしくはバンド数が1のもの
-        fread( buf, 1, count * band->byte_per_sample * band->sample_per_pix, band->fp );
+        // fread( buf, 1, count * band->byte_per_sample * band->sample_per_pix, band->fp );
+        remos_fread( band->cont, buf, count * band->byte_per_sample * band->sample_per_pix );
     } else {
         // バンド数が1より多く、PACK
 
@@ -1147,7 +1189,8 @@ int remos_get_line_pixels( struct REMOS_BAND *band, unsigned char *buf, int line
 		read_buf = malloc( band->line_img_width * band->sample_per_pix * band->byte_per_sample );
 
 		/* 読み込み */
-		fread( read_buf, 1, count * band->sample_per_pix * band->byte_per_sample, band->fp );
+	   	// fread( read_buf, 1, count * band->sample_per_pix * band->byte_per_sample, band->fp );
+        remos_fread( band->cont, read_buf, count * band->sample_per_pix * band->byte_per_sample );
 
 		/* 詰め込み */
 		for ( i = 0; i < count; i++ ) {
@@ -1244,5 +1287,88 @@ void remos_latlon_to_xy( int *i, int *j, int w, int h, float lat, float lon, flo
     /* 結果返す */
     *i = i_buf * ( w - 1 );
     *j = j_buf * ( h - 1 );
+}
+
+int remos_fopen( struct REMOS_FILE_CONTAINER *cont, char *filename )
+{
+    // ファイルを開く
+#ifdef _WIN32
+    cont->hf = CreateFile( filename, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL );
+
+    if ( cont->hf == INVALID_HANDLE_VALUE ) {
+        return 0;
+    }
+#else
+    if ( ( cont->fp = fopen( filename, "rb" ) ) == NULL ) {
+		return 0;
+	}
+#endif
+
+    return 1;
+}
+
+int remos_fclose( struct REMOS_FILE_CONTAINER *cont )
+{
+    // ファイルを閉じる
+#ifdef _WIN32
+    CloseHandle( cont->hf );
+
+    cont->hf = INVALID_HANDLE_VALUE;
+#else
+    fclose( cont->fp );
+
+    cont->fp = NULL;
+#endif
+
+    return 1;
+}
+
+int remos_fseek( struct REMOS_FILE_CONTAINER *cont, long long move, enum remos_file_move_method method )
+{
+    // 移動
+#ifdef _WIN32
+    LARGE_INTEGER lmove;
+
+    lmove.QuadPart = move;
+
+    switch ( method ) {
+    case REMOS_FILE_MOVE_CURRENT:
+        SetFilePointerEx( cont->hf, lmove, NULL, FILE_CURRENT );
+        break;
+    case REMOS_FILE_MOVE_BEGIN:
+        SetFilePointerEx( cont->hf, lmove, NULL, FILE_BEGIN );
+        break;
+    case REMOS_FILE_MOVE_END:
+        SetFilePointerEx( cont->hf, lmove, NULL, FILE_END );
+        break;
+    }
+#else
+    switch ( method ) {
+    case REMOS_FILE_MOVE_CURRENT:
+        fseek( cont->fp, move, SEEK_CUR );
+        break;
+    case REMOS_FILE_MOVE_BEGIN:
+        fseek( cont->fp, move, SEEK_SET );
+        break;
+    case REMOS_FILE_MOVE_END:
+        fseek( cont->fp, move, SEEK_END );
+        break;
+    }
+#endif
+
+    return 1;
+}
+
+int remos_fread( struct REMOS_FILE_CONTAINER *cont, unsigned char *dest, unsigned int num )
+{
+    // ファイル読み込み
+#ifdef _WIN32
+    DWORD readnum;
+
+    ReadFile( cont->hf, dest, num, &readnum, NULL );
+#else
+    fread( dest, 1, num, cont->fp );
+#endif
+    return 1;
 }
 

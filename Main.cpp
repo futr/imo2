@@ -866,7 +866,7 @@ void __fastcall TSatViewMainForm::SatImageMouseDown(TObject *Sender,
             band[1] = '\0';
 
             str = str + band;
-            str = str + " : " + IntToStr( val ) + "\n";
+            str = str + " : " + FloatToStr( val ) + "\n";
         }
 
         pix_form->ValueLabel->Caption = str;
@@ -1461,7 +1461,7 @@ void __fastcall TSatViewMainForm::DrawMiniMap( int vert, int hor )
         band[1] = '\0';
 
         str = band;
-        str = str + " : " + IntToStr( (int)val );
+        str = str + " : " + FloatToStr( (int)val );
 
         SatImage->Canvas->Font->Size = 9;
         SatImage->Canvas->Font->Color = clRed;
@@ -1634,7 +1634,7 @@ void __fastcall TSatViewMainForm::SatImageMouseMove(TObject *Sender,
                 band[1] = '\0';
 
                 str = str + band;
-                str = str + " : " + IntToStr( (int)val ) + "\n";
+                str = str + " : " + FloatToStr( val ) + "\n";
         	}
 
         	PixForm->ValueLabel->Caption = str;
@@ -3194,7 +3194,8 @@ void __fastcall TSatViewMainForm::OpenFiles( void )
         /* 対象ファイルが大きすぎて、かつヒストグラムが必要な場合に警告 */
         FindFirst( OpenDialog->Files->Strings[i], faAnyFile, sr );
 
-        if ( ( sr.Size > 100000000 ) && ( b_hist_calc == true ) && ( !hist_ask ) ) {
+        // ファイルが大きすぎる場合sr.Sizeが負になってしまうのでとりあえず対処
+        if ( ( sr.Size > 100000000 || sr.Size < 0 ) && ( b_hist_calc == true ) && ( !hist_ask ) ) {
             if ( Application->MessageBoxA( "ファイルサイズが100MBを超えているためヒストグラム作成に時間がかかる可能性があります。\nヒストグラムを作成しますか？", "情報", MB_ICONINFORMATION|MB_YESNO ) == IDNO ) {
                 b_hist_calc = false;
             }

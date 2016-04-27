@@ -3,7 +3,7 @@ object AboutForm: TAboutForm
   Top = 343
   BorderStyle = bsDialog
   Caption = #12496#12540#12472#12519#12531#24773#22577
-  ClientHeight = 342
+  ClientHeight = 263
   ClientWidth = 368
   Color = clBtnFace
   Font.Charset = SHIFTJIS_CHARSET
@@ -20,7 +20,7 @@ object AboutForm: TAboutForm
     Top = 12
     Width = 85
     Height = 12
-    Caption = 'SatelliteEye 1.40'
+    Caption = 'SatelliteEye 1.41'
   end
   object Label2: TLabel
     Left = 84
@@ -171,27 +171,6 @@ object AboutForm: TAboutForm
       FF80000FFF80000FFF80000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
       FFFFFFFF}
   end
-  object Label3: TLabel
-    Left = 96
-    Top = 68
-    Width = 85
-    Height = 12
-    Caption = 'ecalc.c jit'#23550#24540#29256
-  end
-  object Label4: TLabel
-    Left = 96
-    Top = 84
-    Width = 53
-    Height = 12
-    Caption = 'tifrec.c 1.0'
-  end
-  object Label5: TLabel
-    Left = 96
-    Top = 100
-    Width = 57
-    Height = 12
-    Caption = 'remos.c 1.3'
-  end
   object Label6: TLabel
     Left = 84
     Top = 48
@@ -200,29 +179,22 @@ object AboutForm: TAboutForm
     Caption = 'https://github.com/futr/imo2'
   end
   object Label7: TLabel
-    Left = 76
-    Top = 136
+    Left = 72
+    Top = 68
     Width = 281
     Height = 12
     Caption = 'Siya*ara'#12373#12435#12398#12450#12503#12522#12465#12540#12471#12519#12531#29992#12450#12452#12467#12531#12475#12483#12488' ver2.00'
   end
-  object Label8: TLabel
-    Left = 96
-    Top = 116
-    Width = 54
-    Height = 12
-    Caption = 'econf.c 1.1'
-  end
   object Label9: TLabel
     Left = 12
-    Top = 168
+    Top = 88
     Width = 314
     Height = 12
     Caption = 'UTM'#12392#32076#24230#32239#24230#12398#22793#25563#12395'art_common'#12398'UTM.h'#12434#21033#29992#12375#12414#12375#12383#12290
   end
   object ButtonOk: TButton
     Left = 284
-    Top = 312
+    Top = 232
     Width = 75
     Height = 25
     Caption = 'OK'
@@ -232,7 +204,7 @@ object AboutForm: TAboutForm
   end
   object Memo1: TMemo
     Left = 12
-    Top = 184
+    Top = 104
     Width = 345
     Height = 117
     Lines.Strings = (

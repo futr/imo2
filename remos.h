@@ -17,29 +17,36 @@
 #include "tifrec.h"
 #include "hsdinfo.h"
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 #define REMOS_MAX_FILENAME			1024
 
 #define REMOS_SIZE_INT				4						/* intの大きさ */
 #define REMOS_SIZE_CHAR				1						/* charの大きさ */
 #define REMOS_SIZE_SHORT			2						/* short intの大きさ */
 
-#define REMOS_FILE_TYPE_NOT_RECOG		-3					/* 識別させない */
-#define REMOS_FILE_TYPE_UNKNOWN			-2					/* 不明 */
-#define REMOS_FILE_TYPE_AUTO			-1					/* 自動判別 */
-#define REMOS_FILE_TYPE_BIL				0					/* 標準的なBIL */
-#define REMOS_FILE_TYPE_BSQ 			1					/* 標準的なBSQ */
-#define REMOS_FILE_TYPE_BIL_ALOS		2					/* ALOSのBIL */
-#define REMOS_FILE_TYPE_BSQ_ALOS		3					/* ALOSのBSQ */
-#define REMOS_FILE_TYPE_TIFF			4					/* TIFF */
-#define REMOS_FILE_TYPE_BIL_R10			6					/* いも天形式のBIL */
-#define REMOS_FILE_TYPE_BSQ_ALOS_PAL	7					/* ALOSのPAL */
-#define REMOS_FILE_TYPE_BSQ_ALOS_PAL_11 8					/* ALOSのPAL1.1 */
-#define REMOS_FILE_TYPE_HSD             9                   // ひまわりHSD
+#define REMOS_FILE_TYPE_NOT_RECOG		    -3					/* 識別させない */
+#define REMOS_FILE_TYPE_UNKNOWN			    -2					/* 不明 */
+#define REMOS_FILE_TYPE_AUTO			    -1					/* 自動判別 */
+#define REMOS_FILE_TYPE_BIL				    0					/* 標準的なBIL */
+#define REMOS_FILE_TYPE_BSQ 			    1					/* 標準的なBSQ */
+#define REMOS_FILE_TYPE_BIL_ALOS		    2					/* ALOSのBIL */
+#define REMOS_FILE_TYPE_BSQ_ALOS		    3					/* ALOSのBSQ */
+#define REMOS_FILE_TYPE_TIFF			    4					/* TIFF */
+#define REMOS_FILE_TYPE_BIL_R10		   	    6					/* いも天形式のBIL */
+#define REMOS_FILE_TYPE_BSQ_ALOS_PAL   	    7					/* ALOSのPAL */
+#define REMOS_FILE_TYPE_BSQ_ALOS_PAL_11     8					/* ALOSのPAL1.1 */
+#define REMOS_FILE_TYPE_HSD                 9                   // ひまわりHSD
+#define REMOS_FILE_TYPE_BSQ_ALOS_PAL2_11    10					/* ALOS2のPAL1.1 */
 
 #define REMOS_RET_FAILED			0						/* 失敗 */
 #define REMOS_RET_SUCCEED			1						/* 成功 */
 #define REMOS_RET_UNKNOWN			2						/* 開けはしたけど識別失敗 */
 #define REMOS_RET_READ_FAILED		3						/* なぜか読み込み失敗 */
+
+#define REMOS_MAX_32BIT 4294967296ULL
 
 enum remos_band_mode{
     REMOS_BAND_MODE_BIL,
@@ -65,6 +72,14 @@ enum remos_band_sample_format {								/* サンプル方法 ( tiffのタグの値を参考 ) 
 	REMOS_BAND_SAMPLE_FORMAT_COMPLEX_INT,
 	REMOS_BAND_SAMPLE_FORMAT_COMPLEX_IEEEFP,
 };
+
+enum remos_file_move_method {
+    REMOS_FILE_MOVE_CURRENT,
+    REMOS_FILE_MOVE_BEGIN,
+    REMOS_FILE_MOVE_END,
+};
+
+struct REMOS_FILE_CONTAINER;
 
 struct REMOS_BAND {											/* バンド情報構造体 */
 	int band_num;											/* バンド番号 0から  */
@@ -100,10 +115,16 @@ struct REMOS_BAND {											/* バンド情報構造体 */
     enum remos_band_mode band_mode;                         /* バンドデータの格納方法 */
 
 	FILE *fp;
+
+    struct REMOS_FILE_CONTAINER *cont;                      /* 親コンテナ */
 };
 
 struct REMOS_FILE_CONTAINER {								/* ファイルコンテナ? */
+#ifdef _WIN32
+    HANDLE hf;
+#endif
 	FILE *fp;												/* ファイルポインタ */
+    
 	char file_name[REMOS_MAX_FILENAME];						/* ファイル名 */
 	
 	int type;												/* 読み込まれたファイルタイプ */
@@ -173,6 +194,12 @@ extern "C" {
 
 int remos_open( struct REMOS_FILE_CONTAINER *cont, char *filename, int type );								/* ファイルを開く */
 int remos_close( struct REMOS_FILE_CONTAINER *cont );														/* ファイルを閉じる */
+
+/* private ファイル操作 */
+int remos_fopen( struct REMOS_FILE_CONTAINER *cont, char *filename );
+int remos_fclose( struct REMOS_FILE_CONTAINER *cont );
+int remos_fseek( struct REMOS_FILE_CONTAINER *cont, long long move, enum remos_file_move_method method );
+int remos_fread( struct REMOS_FILE_CONTAINER *cont, unsigned char *dest, unsigned int num );
 
 /* タイプを手動設定 */
 int remos_set_type_BIL( struct REMOS_FILE_CONTAINER *cont, int file_header, int header, int footer, int lines, int width, int bands ,int bits );
