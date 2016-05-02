@@ -174,10 +174,10 @@ bool __fastcall TSaveForm::SaveToBmp( AnsiString filename, int zpos )
     jit_r = ecalc_create_jit_tree( tok_r );
 
     ecalc_free_jit_tree( jit_g );
-    jit_r = ecalc_create_jit_tree( tok_g );
+    jit_g = ecalc_create_jit_tree( tok_g );
 
     ecalc_free_jit_tree( jit_b );
-    jit_r = ecalc_create_jit_tree( tok_b );
+    jit_b = ecalc_create_jit_tree( tok_b );
 
     /* ç¿ïWåvéZ */
     draw_x = 0;
