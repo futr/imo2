@@ -76,6 +76,7 @@ object SatViewMainForm: TSatViewMainForm
           Font.Name = #65325#65331' '#65328#12468#12471#12483#12463
           Font.Style = []
           ParentFont = False
+          OnClick = Label2Click
         end
         object Label3: TLabel
           Left = 12
@@ -89,6 +90,7 @@ object SatViewMainForm: TSatViewMainForm
           Font.Name = #65325#65331' '#65328#12468#12471#12483#12463
           Font.Style = []
           ParentFont = False
+          OnClick = Label3Click
         end
         object Label4: TLabel
           Left = 12
@@ -102,6 +104,7 @@ object SatViewMainForm: TSatViewMainForm
           Font.Name = #65325#65331' '#65328#12468#12471#12483#12463
           Font.Style = []
           ParentFont = False
+          OnClick = Label4Click
         end
         object ExpDrawRadioButton: TRadioButton
           Left = 8

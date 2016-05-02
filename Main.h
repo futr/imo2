@@ -275,6 +275,9 @@ __published:	// IDE 管理のコンポーネント
 	void __fastcall TBCurposClick(TObject *Sender);
 	void __fastcall MI_C_LS8_THMClick(TObject *Sender);
     void __fastcall SatImageDblClick(TObject *Sender);
+    void __fastcall Label2Click(TObject *Sender);
+    void __fastcall Label3Click(TObject *Sender);
+    void __fastcall Label4Click(TObject *Sender);
 private:	// ユーザー宣言
     void __fastcall UpdateTimerEvent(TObject *Sender);
 public:

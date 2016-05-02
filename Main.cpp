@@ -4130,3 +4130,25 @@ void __fastcall TSatViewMainForm::SatImageDblClick(TObject *Sender)
 
 
 
+
+void __fastcall TSatViewMainForm::Label2Click(TObject *Sender)
+{
+    ExpEditR->SetFocus();
+    ExpEditR->SelectAll();
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TSatViewMainForm::Label3Click(TObject *Sender)
+{
+    ExpEditG->SetFocus();
+    ExpEditG->SelectAll();
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TSatViewMainForm::Label4Click(TObject *Sender)
+{
+    ExpEditB->SetFocus();
+    ExpEditB->SelectAll();
+}
+//---------------------------------------------------------------------------
+
