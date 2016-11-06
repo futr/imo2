@@ -40,6 +40,7 @@
 #define REMOS_FILE_TYPE_BSQ_ALOS_PAL_11     8					/* ALOSÇÃPAL1.1 */
 #define REMOS_FILE_TYPE_HSD                 9                   // Ç–Ç‹ÇÌÇËHSD
 #define REMOS_FILE_TYPE_BSQ_ALOS_PAL2_11    10					/* ALOS2ÇÃPAL1.1 */
+#define REMOS_FILE_TYPE_BSQ_ALOS_PAL2_21    11					/* ALOS2ÇÃPAL2.1 */
 
 #define REMOS_RET_FAILED			0						/* é∏îs */
 #define REMOS_RET_SUCCEED			1						/* ê¨å˜ */

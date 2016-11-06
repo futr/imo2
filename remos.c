@@ -113,6 +113,9 @@ int remos_check_file_type( struct REMOS_FILE_CONTAINER *cont )
         } else if ( !strncmp( str_buf, "SARB", 4 ) ) {
 			/* PALSAR2 1.1だった */
 			return REMOS_FILE_TYPE_BSQ_ALOS_PAL2_11;
+		} else if ( !strncmp( str_buf, "SARE", 4 ) ) {
+			/* PALSAR2 2.1だった */
+			return REMOS_FILE_TYPE_BSQ_ALOS_PAL2_21;
 		} else {
 			/* AV2かPRISMだった */
 			return REMOS_FILE_TYPE_BSQ_ALOS;
@@ -185,14 +188,14 @@ int remos_read_file( struct REMOS_FILE_CONTAINER *cont )
             remos_fseek( cont, 180, REMOS_FILE_MOVE_BEGIN );
 			// fread( buf, 1, sizeof(struct REMOS_HEADER_LINE_ALOS_PAL), cont->fp );
             remos_fread( cont, buf, sizeof(struct REMOS_HEADER_LINE_ALOS_PAL) );
-			
+
 			for ( i = 0; i < cont->band_count; i++ ) {
 				cont->bands[i].band_count  = 2;
 
 				cont->bands[i].color         = REMOS_BAND_COLOR_PACKED_IEEEFP;
 				cont->bands[i].sample_format = REMOS_BAND_SAMPLE_FORMAT_IEEEFP;
 				cont->bands[i].endian        = REMOS_ENDIAN_BIG;
-				
+
 				cont->bands[i].fp          = cont->fp;
 				cont->bands[i].band_num    = i;
 				cont->bands[i].bits        = remos_I2int( ( (struct REMOS_HEADER_LINE_ALOS_PAL *)buf )->bit_per_pix_I4,   4 );
@@ -205,7 +208,7 @@ int remos_read_file( struct REMOS_FILE_CONTAINER *cont )
 	            cont->bands[i].byte_per_sample = cont->bands->bits / 8;
 
 				cont->bands[i].line_img_width = ( cont->bands[i].line_width - cont->bands[i].line_header - cont->bands[i].line_footer ) / ( cont->bands[i].byte_per_sample * cont->bands[i].sample_per_pix );
-				
+
 				cont->bands[i].header       = header;				/* 本当は+180の気がしたが、+180は無い方が良い, cont->bands->line_widthをheaderに置き換えてみた */
 
 				cont->bands[i].range_top    = pow( 2, cont->bands->bits ) - 1;
@@ -226,9 +229,10 @@ int remos_read_file( struct REMOS_FILE_CONTAINER *cont )
 			free( buf );
 
 			return REMOS_RET_SUCCEED;
-		
+
 		case REMOS_FILE_TYPE_BSQ_ALOS:										/* ALOSのBSQだった */
 		case REMOS_FILE_TYPE_BSQ_ALOS_PAL:
+        case REMOS_FILE_TYPE_BSQ_ALOS_PAL2_21:
 			/* コンテナを設定 */
 			cont->band_count = 1;
 			cont->bands      = malloc( sizeof(struct REMOS_BAND) );
@@ -248,7 +252,7 @@ int remos_read_file( struct REMOS_FILE_CONTAINER *cont )
             free( buf );
 
 			/* PALSARか否かで少し違う */
-			if ( cont->type == REMOS_FILE_TYPE_BSQ_ALOS_PAL ) {
+			if ( cont->type == REMOS_FILE_TYPE_BSQ_ALOS_PAL || cont->type == REMOS_FILE_TYPE_BSQ_ALOS_PAL2_21 ) {
 				/* 情報取得のためにバッファ作成 */
 				buf = malloc( sizeof(struct REMOS_HEADER_LINE_ALOS_PAL) );
 
@@ -256,14 +260,14 @@ int remos_read_file( struct REMOS_FILE_CONTAINER *cont )
                 remos_fseek( cont, 180, REMOS_FILE_MOVE_BEGIN );
 				// fread( buf, 1, sizeof(struct REMOS_HEADER_LINE_ALOS_PAL), cont->fp );
                 remos_fread( cont, buf, sizeof(struct REMOS_HEADER_LINE_ALOS_PAL) );
-				
+
 				/* バンドに設定適用 PALSARではline_header部等の意味が異なるため正確でない */
 				cont->bands->band_count = 1;
 
 				cont->bands->color         = REMOS_BAND_COLOR_BW;
 				cont->bands->sample_format = REMOS_BAND_SAMPLE_FORMAT_UINT;
 				cont->bands->endian        = REMOS_ENDIAN_BIG;					/* bigendianで大丈夫だろうか */
-				
+
 				cont->bands->fp          = cont->fp;
 				cont->bands->band_num    = 0;
 				cont->bands->bits        = remos_I2int( ( (struct REMOS_HEADER_LINE_ALOS_PAL *)buf )->bit_per_pix_I4,   4 );
