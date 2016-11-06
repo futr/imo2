@@ -801,17 +801,14 @@ void __fastcall TSatViewMainForm::SatImageMouseDown(TObject *Sender,
 
     	b_click = true;
     } else {
-    	int vert;
-    	int hor;
     	int i;
     	int cent_c_x;
     	int cent_c_y;
         AnsiString str;
-        unsigned int val;
+        double val;
     	struct REMOS_FRONT_BAND *box;
         char band[2];
         TPixForm *pix_form;
-        double mag;
 
         // クリック解除
     	b_click = false;
@@ -820,32 +817,9 @@ void __fastcall TSatViewMainForm::SatImageMouseDown(TObject *Sender,
         pix_form = new TPixForm( this );
         pix_form->do_delete = true;
 
-        /* カーソル位置算定 */
-        vert = ScrImgVert->Position;
-        hor  = ScrImgHor->Position;
 
-        // 倍率
-        mag = ZoomPosToMag( zoom_pos );
-
-        /* トライアンドエラーでこうなった */
-        cent_c_x = hor + ( X + line_add_x - SatImage->Width / 2 ) / mag;
-        cent_c_y = vert + ( Y + line_add_y - SatImage->Height / 2 ) / mag;
-
-        if ( cent_c_x < 0 ) {
-            cent_c_x = 0;
-        }
-
-        if ( cent_c_y < 0 ) {
-            cent_c_y = 0;
-        }
-
-        if ( cent_c_y >= img_h ) {
-            cent_c_y = img_h - 1;
-        }
-
-        if ( cent_c_x >= img_w ) {
-            cent_c_x = img_w - 1;
-        }
+        // 画面位置を画像位置へ
+        ScrnPosToImgPos( X, Y, &cent_c_x, &cent_c_y );
 
         str = "";
         str = str + "X, Y : " + IntToStr( cent_c_x ) + ", " + IntToStr( cent_c_y ) + "\n";
